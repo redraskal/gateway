@@ -15,3 +15,7 @@ export async function* walk(
 		}
 	}
 }
+
+export function parseBoolean(s: string | undefined): boolean {
+	return s ? s.toLowerCase() == "true" || s == "1" ? true : false : false;
+}

@@ -1,8 +1,7 @@
 import path from "path";
-import { fileURLToPath } from "url";
 import html, { page } from "./html";
 import { Route } from "./route";
-import { walk } from "./utils";
+import { parseBoolean, walk } from "./utils";
 
 const router = new Bun.FileSystemRouter({
 	style: "nextjs",
@@ -12,8 +11,11 @@ const router = new Bun.FileSystemRouter({
 export type Environment = "dev" | "prod";
 
 const hostname = process.env.GATEWAY_HOSTNAME || "0.0.0.0";
-const port = process.env.GATEWAY_PORT || 3000;
+const port = process.env.GATEWAY_PORT || "3000";
 export const env = process.env.GATEWAY_ENV?.toLowerCase() as Environment || "prod";
+const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
+const throwJSONErrors = parseBoolean(process.env.GATEWAY_JSON_ERRORS);
+const compress = parseBoolean(process.env.GATEWAY_COMPRESS);
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 
@@ -55,7 +57,8 @@ async function request(req: Request): Promise<Response> {
 			err = e;
 		}
 		const accept = req.headers.get("accept") || "";
-		if (data && (requestingJsonFile || accept == "application/json")) {
+		const clientRequestingJSON = requestingJsonFile || accept == "application/json";
+		if (data && clientRequestingJSON) {
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
 				if (!key.startsWith("_")) {
 					// @ts-ignore
@@ -64,6 +67,16 @@ async function request(req: Request): Promise<Response> {
 				return obj;
 			}, {});
 			return Response.json(sanitized);
+		}
+		if (!data && err && clientRequestingJSON && throwJSONErrors) {
+			return Response.json({
+				error: {
+					type: err.name,
+					message: err.message,
+				},
+			}, {
+				status: 502,
+			});
 		}
 		if (route.body && (accept == "*/*" || accept.indexOf("text/html") > -1)) {
 			let head = route.head ? route.head(data, err) : null;
@@ -79,7 +92,7 @@ async function request(req: Request): Promise<Response> {
 	if (await file.exists()) {
 		let response = new Response(file);
 		if (env == "prod") {
-			response.headers.set("Cache-Control", "max-age=3600");
+			response.headers.set("Cache-Control", `max-age=${cacheTTL}`);
 		}
 		return response;
 	}
@@ -95,6 +108,16 @@ export default {
 	hostname,
 	port,
 	fetch: async (req: Request) => {
-		return await request(req);
+		const acceptEncoding = req.headers.get("accept-encoding")?.split(", ") || [];
+		const res = await request(req);
+		if (compress && acceptEncoding.includes("gzip")) {
+			const buffer = await res.arrayBuffer();
+			res.headers.append("Content-Encoding", "gzip");
+			return new Response(Bun.gzipSync(new Uint8Array(buffer)), {
+				headers: res.headers,
+				status: res.status,
+			});
+		}
+		return res;
 	},
 };
