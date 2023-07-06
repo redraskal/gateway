@@ -1,4 +1,5 @@
 import path from "path";
+import { fileURLToPath } from "url";
 import html, { page } from "./html";
 import { Route } from "./route";
 import { walk } from "./utils";
@@ -39,7 +40,8 @@ if (await Bun.file(appIndex).exists()) {
 
 async function request(req: Request): Promise<Response> {
 	const url = new URL(req.url);
-	const match = router.match(url.pathname);
+	const requestingJsonFile = url.pathname.endsWith(".json");
+	const match = router.match(requestingJsonFile ? url.pathname.split(".json")[0] : url.pathname);
 	if (match && pages.has(match.filePath)) {
 		if (env == "dev") {
 			console.log(`🔍 [${req.method}] ${url.pathname}`);
@@ -53,7 +55,7 @@ async function request(req: Request): Promise<Response> {
 			err = e;
 		}
 		const accept = req.headers.get("accept") || "";
-		if (data && accept == "application/json") {
+		if (data && (requestingJsonFile || accept == "application/json")) {
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
 				if (!key.startsWith("_")) {
 					// @ts-ignore
