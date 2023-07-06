@@ -1,7 +1,6 @@
 import { MatchedRoute } from "bun";
 import { HTMLTemplateString } from "./html";
 
-export type RouteResponse = Response | HTMLTemplateString | string | void;
 export type Resolved<T> = T extends Promise<infer R> ? R : T;
 // @ts-ignore
 export type Data<T extends Route> = Resolved<ReturnType<T["data"]>>;
@@ -20,17 +19,3 @@ export class Route {
 		return null;
 	}
 };
-
-// export function response(res: RouteResponse): Response {
-// 	if (res instanceof Response) {
-// 		return res;
-// 	}
-// 	const parsed = res as HTMLTemplateString;
-// 	if (parsed.html) {
-// 		console.log("is html");
-// 	} else {
-// 		console.log("isn't html");
-// 	}
-// 	console.log(res);
-// 	return Response.error();
-// }
