@@ -12,6 +12,14 @@ export interface Route {
 };
 
 export class Route {
+	/**
+	 * Read the body from the Request as a {@link FormData} object.
+	 *
+	 * This first decodes the data from UTF-8, then parses it as a
+	 * `multipart/form-data` body or a `application/x-www-form-urlencoded` body.
+	 *
+	 * @returns Promise<FormData> - The body of the request as a {@link FormData}.
+	 */
 	static async form(req: Request) {
 		if (req.method == "POST") {
 			return await req.formData();
