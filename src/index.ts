@@ -23,8 +23,6 @@ if (!debug) {
 	console.debug = () => {};
 }
 
-console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
-
 if (fileGen) {
 	const filePath = path.join("pages", fileGen.endsWith(".ts") ? fileGen : `${fileGen}.ts`);
 	const file = Bun.file(filePath);
@@ -38,6 +36,8 @@ if (fileGen) {
 	openVSCode(filePath);
 	process.exit(0);
 }
+
+console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 
 if (env == "dev") {
 	console.log(`⚠️ Watch mode is not yet stable.`);
