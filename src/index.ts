@@ -14,8 +14,8 @@ const hostname = process.env.GATEWAY_HOSTNAME || "0.0.0.0";
 const port = process.env.GATEWAY_PORT || "3000";
 export const env = process.env.GATEWAY_ENV?.toLowerCase() as Environment || "prod";
 const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
-const throwJSONErrors = parseBoolean(process.env.GATEWAY_JSON_ERRORS);
-const compress = parseBoolean(process.env.GATEWAY_COMPRESS);
+const throwJSONErrors = process.env.GATEWAY_JSON_ERRORS ? parseBoolean(process.env.GATEWAY_JSON_ERRORS) : true;
+const compress = process.env.GATEWAY_COMPRESS ? parseBoolean(process.env.GATEWAY_COMPRESS) : true;
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 
