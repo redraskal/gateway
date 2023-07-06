@@ -2,6 +2,11 @@
 
 **This is a work in progress. The API is subject to change until a stable version is released.**
 
+## To install Bun:
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
 ## To create a project:
 
 ```bash
