@@ -62,4 +62,29 @@ curl -fsSL https://bun.sh/install | bash
 bun create redraskal/gateway-template {dir}
 ```
 
+## To run a development server:
+
+```bash
+bun run dev
+```
+
+## To run a production server:
+
+```bash
+bun start
+```
+
+## To generate a route:
+
+```bash
+bun gen {name}
+
+bun gen test
+# or
+bun gen test.ts
+# 📝 pages/test.ts created.
+```
+
+The new route will automatically open in Visual Studio Code.
+
 This project was created using `bun init` in bun v0.6.13. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
