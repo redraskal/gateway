@@ -10,8 +10,9 @@
 * Automatic JSON responses on all routes
 * Automatic JSON error responses
 * Static file serving & caching (public/)
+* Compression (gzip)
 * Optional entrypoint (src/index.ts)
-* Optional 404 page (404.ts)
+* Optional 404 page (pages/404.ts)
 * Route file generator via CLI (bun gen)
 
 ## Soon...
