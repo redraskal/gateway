@@ -1,3 +1,4 @@
+import { MatchedRoute } from "bun";
 import { HTMLTemplateString } from "./html";
 
 export type RouteResponse = Response | HTMLTemplateString | string | void;
@@ -5,7 +6,7 @@ export type RouteResponse = Response | HTMLTemplateString | string | void;
 export type Data<T extends Route> = ReturnType<T["data"]>;
 
 export interface Route {
-	data?(req: Request): any;
+	data?(req: Request, route: MatchedRoute): any;
 	head?<T extends Route>(data: Data<T>, err?: Error): HTMLTemplateString;
 	body?<T extends Route>(data: Data<T>, err?: Error): HTMLTemplateString;
 };

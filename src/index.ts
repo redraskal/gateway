@@ -52,7 +52,7 @@ async function request(req: Request): Promise<Response> {
 		let data: any;
 		let err: any;
 		try {
-			data = route.data ? await route.data(req) : null;
+			data = route.data ? await route.data(req, match) : null;
 		} catch (e: any) {
 			err = e;
 			console.error(`❌ [${err.name}] ${url.pathname} ${err.message}`);
