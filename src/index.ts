@@ -30,8 +30,9 @@ for await (const file of walk("./pages", ["ts"])) {
 	console.log(`	🔗 ${file}`);
 	const absolute = path.join(process.cwd(), file);
 	const clazz = import.meta.require(absolute);
-	pages.set(absolute, new clazz.default());
+	pages.set(file, new clazz.default());
 }
+const notFound = pages.get("pages/404.ts");
 
 const defaultHead = html`
 	<meta charset="UTF-8" />
@@ -49,11 +50,12 @@ async function request(req: Request): Promise<Response> {
 	const url = new URL(req.url);
 	const requestingJsonFile = url.pathname.endsWith(".json");
 	const match = router.match(requestingJsonFile ? url.pathname.split(".json")[0] : url.pathname);
-	if (match && pages.has(match.filePath)) {
+	const matchKey = match ? `pages/${match.src}` : null;
+	if (match && matchKey && pages.has(matchKey)) {
 		if (env == "dev") {
 			console.log(`🔍 [${req.method}] ${url.pathname}`);
 		}
-		const route = pages.get(match.filePath)!;
+		const route = pages.get(matchKey)!;
 		let data: any;
 		let err: any;
 		try {
@@ -109,9 +111,19 @@ async function request(req: Request): Promise<Response> {
 	if (env == "dev") {
 		console.log(`⚠️ 404: [${req.method}] ${url.pathname}`);
 	}
-	return new Response("", {
-		status: 404,
-	});
+	if (notFound && notFound.body) {
+		const head = notFound.head ? notFound.head(null) : null;
+		const body = notFound.body(null);
+		return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body), {
+			headers: {
+				"Content-Type": "text/html; charset=utf-8",
+			},
+		});
+	} else {
+		return new Response("", {
+			status: 404,
+		});
+	}
 }
 
 export default {
