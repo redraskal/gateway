@@ -1,4 +1,6 @@
-# gateway
+# Gateway
+
+**This is a work in progress. The API is subject to change until a stable version is released.**
 
 ## To install dependencies:
 
