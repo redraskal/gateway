@@ -10,9 +10,9 @@ export default class implements Route {
 		};
 	}
 
-	head() {
+	head(data: Data<this>) {
 		return html`
-			<title>Hello!</title>
+			<title>Hello ${data.name}!</title>
 			<link rel="stylesheet" href="/css/form.css" />
 		`;
 	}
