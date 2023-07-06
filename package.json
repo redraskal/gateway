@@ -1,0 +1,19 @@
+{
+  "name": "gateway",
+  "module": "src/index.ts",
+  "type": "module",
+  "files": [
+    "src/*.ts",
+    "LICENSE",
+    "package.json"
+  ],
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "bin": {
+    "gateway": "index.ts"
+  }
+}
