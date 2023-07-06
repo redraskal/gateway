@@ -22,7 +22,7 @@ export default class implements Route {
 			<h1>Hello ${data.name} at ${data.time}!</h1>
 			<form method="post">
 				<label for="name">Name</label>
-				<input type="text" id="name" name="name" required>
+				<input type="text" id="name" name="name" autofocus required>
 				<input type="submit" value="Submit" />
 			</form>
 		`;
