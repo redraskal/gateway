@@ -1,7 +1,20 @@
 {
   "name": "gateway",
+  "description": "Experimental Bun web framework",
   "module": "src/index.ts",
   "type": "module",
+  "version": "0.1.0",
+  "author": {
+    "name": "redraskal",
+    "url": "https://github.com/redraskal",
+    "email": "ben@ryben.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/redraskal/gateway"
+  },
+  "bugs": "https://github.com/redraskal/gateway/issues",
+  "homepage": "https://github.com/redraskal/gateway",
   "files": [
     "src/*.ts",
     "LICENSE",
