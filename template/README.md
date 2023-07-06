@@ -1,18 +1,31 @@
 # NAME_HERE
 
-To install dependencies:
+## To install dependencies:
 
 ```bash
 bun i
 ```
 
-To run a development server:
+## To generate a route:
+
+```bash
+bun gen {name}
+
+bun gen test
+# or
+bun gen test.ts
+# 📝 pages/test.ts created.
+```
+
+The new route will automatically open in Visual Studio Code.
+
+## To run a development server:
 
 ```bash
 bun run dev
 ```
 
-To run a production server:
+## To run a production server:
 
 ```bash
 bun start
