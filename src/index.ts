@@ -1,7 +1,7 @@
 import path from "path";
 import html, { page } from "./html";
 import { Route } from "./route";
-import { parseBoolean, walk } from "./utils";
+import { openVSCode, parseBoolean, walk } from "./utils";
 
 const router = new Bun.FileSystemRouter({
 	style: "nextjs",
@@ -17,12 +17,27 @@ const debug = process.env.GATEWAY_DEBUG ? parseBoolean(process.env.GATEWAY_DEBUG
 const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
 const throwJSONErrors = process.env.GATEWAY_JSON_ERRORS ? parseBoolean(process.env.GATEWAY_JSON_ERRORS) : true;
 const compress = process.env.GATEWAY_COMPRESS ? parseBoolean(process.env.GATEWAY_COMPRESS) : env == "prod";
+const fileGen = process.env.GATEWAY_GEN;
 
 if (!debug) {
 	console.debug = () => {};
 }
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
+
+if (fileGen) {
+	const filePath = path.join("pages", fileGen.endsWith(".ts") ? fileGen : `${fileGen}.ts`);
+	const file = Bun.file(filePath);
+	if (await file.exists()) {
+		console.error(`❌ ${file.name} already exists.`);
+		process.exit(-1);
+	}
+	const input = Bun.file(path.join(import.meta.dir, "../gen/route.ts"));
+	await Bun.write(file, await input.text());
+	console.log(`📝 ${file.name} created.`);
+	openVSCode(filePath);
+	process.exit(0);
+}
 
 if (env == "dev") {
 	console.log(`⚠️ Watch mode is not yet stable.`);

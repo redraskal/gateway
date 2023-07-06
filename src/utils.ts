@@ -19,3 +19,7 @@ export async function* walk(
 export function parseBoolean(s: string): boolean {
 	return s.toLowerCase() == "true" || s == "1" ? true : false;
 }
+
+export function openVSCode(filePath: string) {
+	Bun.spawn(["code", "-r", filePath]);
+}

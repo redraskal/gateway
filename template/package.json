@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "gateway",
-    "dev": "gateway dev"
+    "dev": "gateway dev",
+    "gen": "gateway gen"
   },
   "dependencies": {
     "gateway": "link:gateway"
