@@ -24,6 +24,10 @@ if (!debug) {
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 
+if (env == "dev") {
+	console.log(`⚠️ Watch mode is not yet stable.`);
+}
+
 const pages = new Map<string, Route>();
 console.log("📁 Loading routes...");
 for await (const file of walk("./pages", ["ts"])) {
