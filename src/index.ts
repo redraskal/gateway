@@ -118,6 +118,7 @@ async function request(req: Request): Promise<Response> {
 			headers: {
 				"Content-Type": "text/html; charset=utf-8",
 			},
+			status: 404,
 		});
 	} else {
 		return new Response("", {
