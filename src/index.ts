@@ -58,7 +58,7 @@ const defaultHead = html`
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 `;
 
-console.log(`🦊 Server running at ${hostname}:${port} / http://127.0.0.1:${port}`);
+console.log(`🌌 Server running at ${hostname}:${port} / http://127.0.0.1:${port}`);
 
 const appIndex = path.join(process.cwd(), "src/index.ts");
 if (await Bun.file(appIndex).exists()) {
