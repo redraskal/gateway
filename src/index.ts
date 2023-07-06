@@ -55,7 +55,11 @@ async function request(req: Request): Promise<Response> {
 			data = route.data ? await route.data(req, match) : null;
 		} catch (e: any) {
 			err = e;
-			console.error(`❌ [${err.name}] ${url.pathname} ${err.message}`);
+			if (err instanceof TypeError) {
+				console.error(err);
+			} else {
+				console.error(`❌ [${err.name}] ${url.pathname} ${err.message}`);
+			}
 		}
 		const accept = req.headers.get("accept") || "";
 		const clientRequestingJSON = requestingJsonFile || accept == "application/json";

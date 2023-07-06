@@ -2,8 +2,9 @@ import { MatchedRoute } from "bun";
 import { HTMLTemplateString } from "./html";
 
 export type RouteResponse = Response | HTMLTemplateString | string | void;
+export type Resolved<T> = T extends Promise<infer R> ? R : T;
 // @ts-ignore
-export type Data<T extends Route> = ReturnType<T["data"]>;
+export type Data<T extends Route> = Resolved<ReturnType<T["data"]>>;
 
 export interface Route {
 	data?(req: Request, route: MatchedRoute): any;
@@ -11,7 +12,14 @@ export interface Route {
 	body?<T extends Route>(data: Data<T>, err?: Error): HTMLTemplateString;
 };
 
-// export abstract class Route {};
+export class Route {
+	static async form(req: Request) {
+		if (req.method == "POST") {
+			return await req.formData();
+		}
+		return null;
+	}
+};
 
 // export function response(res: RouteResponse): Response {
 // 	if (res instanceof Response) {

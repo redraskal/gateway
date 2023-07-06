@@ -1,9 +1,11 @@
 import { Data, Route, html } from "gateway";
 
 export default class implements Route {
-	data() {
+	async data(req: Request) {
+		const form = await Route.form(req);
 		return {
 			time: new Date(Date.now()).toLocaleString(),
+			name: form?.get("name") || "world",
 			_secret: "yes",
 		};
 	}
@@ -17,9 +19,11 @@ export default class implements Route {
 
 	body(data: Data<this>) {
 		return html`
-			<h1>Hello world at ${data.time}!</h1>
+			<h1>Hello ${data.name} at ${data.time}!</h1>
 			<form method="post">
-				<input type="submit" value="Refresh" />
+				<label for="name">Name</label>
+				<input type="text" id="name" name="name" required>
+				<input type="submit" value="Submit" />
 			</form>
 		`;
 	}
