@@ -2,7 +2,7 @@ import { Data, Route, html } from "gateway";
 
 export default class implements Route {
 	async data(req: Request) {
-		const form = await Route.form(req);
+		const form = await Route.formData(req);
 		return {
 			time: new Date(Date.now()).toLocaleString(),
 			name: form?.get("name") || "world",

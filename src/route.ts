@@ -20,7 +20,7 @@ export class Route {
 	 *
 	 * @returns Promise<FormData> - The body of the request as a {@link FormData}.
 	 */
-	static async form(req: Request) {
+	static async formData(req: Request) {
 		if (req.method == "POST") {
 			return await req.formData();
 		}
