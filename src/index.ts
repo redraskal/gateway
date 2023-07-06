@@ -15,7 +15,7 @@ const port = process.env.GATEWAY_PORT || "3000";
 export const env = process.env.GATEWAY_ENV?.toLowerCase() as Environment || "prod";
 const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
 const throwJSONErrors = process.env.GATEWAY_JSON_ERRORS ? parseBoolean(process.env.GATEWAY_JSON_ERRORS) : true;
-const compress = process.env.GATEWAY_COMPRESS ? parseBoolean(process.env.GATEWAY_COMPRESS) : true;
+const compress = process.env.GATEWAY_COMPRESS ? parseBoolean(process.env.GATEWAY_COMPRESS) : env == "prod";
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 
@@ -55,6 +55,7 @@ async function request(req: Request): Promise<Response> {
 			data = route.data ? await route.data(req) : null;
 		} catch (e: any) {
 			err = e;
+			console.error(`❌ [${err.name}] ${url.pathname} ${err.message}`);
 		}
 		const accept = req.headers.get("accept") || "";
 		const clientRequestingJSON = requestingJsonFile || accept == "application/json";
