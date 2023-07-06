@@ -35,7 +35,7 @@ const defaultHead = html`
 
 console.log(`🦊 Server running at ${hostname}:${port} / http://127.0.0.1:${port}`);
 
-const appIndex = path.join(process.cwd(), "index.ts");
+const appIndex = path.join(process.cwd(), "src/index.ts");
 if (await Bun.file(appIndex).exists()) {
 	import.meta.require(appIndex);
 }

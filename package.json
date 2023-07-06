@@ -14,6 +14,6 @@
     "typescript": "^5.0.0"
   },
   "bin": {
-    "gateway": "index.ts"
+    "gateway": "src/bin.sh"
   }
 }

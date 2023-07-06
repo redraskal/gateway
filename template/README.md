@@ -1,15 +1,21 @@
-# template
+# NAME_HERE
 
 To install dependencies:
 
 ```bash
-bun install
+bun i
 ```
 
-To run:
+To run a development server:
 
 ```bash
-bun run index.ts
+bun run dev
 ```
 
-This project was created using `bun init` in bun v0.6.13. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+To run a production server:
+
+```bash
+bun start
+```
+
+This project was created with [Bun](https://bun.sh), a fast all-in-one JavaScript runtime.
