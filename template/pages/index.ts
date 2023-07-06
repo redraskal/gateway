@@ -1,5 +1,5 @@
-import { Data, Route } from "gateway/src/route";
-import html from "gateway/src/html";
+import { Data, Route } from "gateway";
+import { html } from "gateway";
 
 export default class implements Route {
 	data() {

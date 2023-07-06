@@ -1,4 +1,4 @@
-import { Route } from "../../src/route";
+import { Route } from "gateway";
 
 export default class implements Route {
 	data() {
