@@ -74,6 +74,18 @@ bun run dev
 bun start
 ```
 
+## Environmental variables:
+
+| Name | Description | Default |
+| --- | --- | --- |
+| GATEWAY_HOSTNAME | HTTP server hostname | 0.0.0.0 |
+| GATEWAY_PORT | HTTP server port | 3000 |
+| GATEWAY_ENV | Environment | prod with `bun start`, dev with `bun run dev` |
+| GATEWAY_DEBUG | console.debug output | false |
+| GATEWAY_CACHE_TTL | Cache-Control max age | 3600 |
+| GATEWAY_JSON_ERRORS | Whether to output errors in JSON responses | true |
+| GATEWAY_COMPRESS | Whether to compress responses | true with `bun start`, false with `bun run dev` |
+
 ## To generate a route:
 
 ```bash
