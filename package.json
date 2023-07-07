@@ -29,5 +29,8 @@
   },
   "bin": {
     "gateway": "src/bin.sh"
+  },
+  "dependencies": {
+    "zod": "^3.21.4"
   }
 }

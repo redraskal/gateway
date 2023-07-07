@@ -1,5 +1,6 @@
 import { MatchedRoute } from "bun";
 import { HTMLTemplateString } from "./html";
+import { z } from "zod";
 
 export type Resolved<T> = T extends Promise<infer R> ? R : T;
 // @ts-ignore
@@ -59,5 +60,18 @@ export class Route {
 				.reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {}) as T;
 		}
 		return await this.json<T>(req);
+	}
+
+	/**
+	 * Read the body from the Request and parse using zod.
+	 * 
+	 * This supports JSON bodies and FormData.
+	 * 
+	 * @param req Request
+	 * @returns Promise<T> - JSON object
+	 */
+	static async zod<T>(req: Request, schema: z.ZodType<T>) {
+		const data = await this.body(req);
+		return await schema.parseAsync(data);
 	}
 };
