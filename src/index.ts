@@ -1,5 +1,5 @@
 import path from "path";
-import html, { page } from "./html";
+import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
 import { openVSCode, parseBoolean, walk } from "./utils";
 
@@ -112,6 +112,9 @@ async function request(req: Request): Promise<Response> {
 		if (route.body && (accept == "*/*" || accept.indexOf("text/html") > -1)) {
 			let head = route.head ? route.head(data, err) : null;
 			const body = route.body(data, err);
+			if (body instanceof Response) {
+				return body;
+			}
 			return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body), {
 				headers: {
 					"Content-Type": "text/html; charset=utf-8",
@@ -133,7 +136,10 @@ async function request(req: Request): Promise<Response> {
 	if (notFound && notFound.body) {
 		const head = notFound.head ? notFound.head(null) : null;
 		const body = notFound.body(null);
-		return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body), {
+		if (body instanceof Response) {
+			return body;
+		}
+		return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body as unknown as HTMLTemplateString), {
 			headers: {
 				"Content-Type": "text/html; charset=utf-8",
 			},
