@@ -56,8 +56,9 @@ for await (const file of walk("./pages", ["ts"])) {
 	console.log(`	🔗 ${file}`);
 	const absolute = path.join(process.cwd(), file);
 	const clazz = import.meta.require(absolute);
-	pages.set(file.split("/").pop()!, new clazz.default());
+	pages.set(file.split("/").slice(1).join("/"), new clazz.default());
 }
+
 const notFound = pages.get("404.ts");
 
 const defaultHead = html`
@@ -75,17 +76,23 @@ if (await Bun.file(appIndex).exists()) {
 async function request(req: Request): Promise<Response> {
 	let slashes = 0;
 	let pathname = req.url;
+	let char;
+	const jsonExtensionOffset = req.url.length - 5;
+	let requestingJsonFile = false;
 	for (let i = 0; i < req.url.length; i++) {
-		if (req.url.charAt(i) == '/') {
+		char = req.url.charAt(i);
+		if (char == '/') {
 			if (slashes == 2) {
-				pathname = req.url.slice(i + 1);
-				break;
+				pathname = req.url.slice(i);
 			}
 			slashes++;
 		}
+		if (i == jsonExtensionOffset && char == '.' && req.url.slice(i) == ".json") {
+			pathname = pathname.slice(0, pathname.length - 5);
+			requestingJsonFile = true;
+		}
 	}
-	const requestingJsonFile = pathname.endsWith(".json");
-	const match = router.match(requestingJsonFile ? pathname.split(".json")[0] : pathname);
+	const match = router.match(pathname);
 	const route = match ? pages.get(match.src) : null;
 	if (route) {
 		if (env == "dev") {
@@ -110,7 +117,7 @@ async function request(req: Request): Promise<Response> {
 			|| req.headers.get("accept") == "application/json";
 		if (data && clientRequestingJSON) {
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
-				if (!key.startsWith("_")) {
+				if (key.charAt(0) != '_') {
 					// @ts-ignore
 					obj[key] = value;
 				}
