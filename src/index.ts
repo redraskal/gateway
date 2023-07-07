@@ -62,7 +62,7 @@ console.log(`🌌 Server running at ${hostname}:${port} / http://127.0.0.1:${por
 
 const appIndex = path.join(process.cwd(), "src/index.ts");
 if (await Bun.file(appIndex).exists()) {
-	await import.meta.require(appIndex);
+	await import(appIndex);
 }
 
 async function request(req: Request): Promise<Response> {
