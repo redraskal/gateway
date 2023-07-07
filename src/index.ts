@@ -56,9 +56,9 @@ for await (const file of walk("./pages", ["ts"])) {
 	console.log(`	🔗 ${file}`);
 	const absolute = path.join(process.cwd(), file);
 	const clazz = import.meta.require(absolute);
-	pages.set(file, new clazz.default());
+	pages.set(file.split("/").pop()!, new clazz.default());
 }
-const notFound = pages.get("pages/404.ts");
+const notFound = pages.get("404.ts");
 
 const defaultHead = html`
 	<meta charset="UTF-8" />
@@ -73,19 +73,28 @@ if (await Bun.file(appIndex).exists()) {
 }
 
 async function request(req: Request): Promise<Response> {
-	const url = new URL(req.url);
-	const requestingJsonFile = url.pathname.endsWith(".json");
-	const match = router.match(requestingJsonFile ? url.pathname.split(".json")[0] : url.pathname);
-	const matchKey = match ? `pages/${match.src}` : null;
-	if (match && matchKey && pages.has(matchKey)) {
-		if (env == "dev") {
-			console.log(`🔍 [${req.method}] ${url.pathname}`);
+	let slashes = 0;
+	let pathname = req.url;
+	for (let i = 0; i < req.url.length; i++) {
+		if (req.url.charAt(i) == '/') {
+			if (slashes == 2) {
+				pathname = req.url.slice(i + 1);
+				break;
+			}
+			slashes++;
 		}
-		const route = pages.get(matchKey)!;
+	}
+	const requestingJsonFile = pathname.endsWith(".json");
+	const match = router.match(requestingJsonFile ? pathname.split(".json")[0] : pathname);
+	const route = match ? pages.get(match.src) : null;
+	if (route) {
+		if (env == "dev") {
+			console.log(`🔍 [${req.method}] ${pathname}`);
+		}
 		let data: any;
 		let err: any;
 		try {
-			data = route.data ? await route.data(req, match) : null;
+			data = route.data ? await route.data(req, match!) : null;
 		} catch (e: any) {
 			err = e;
 			if (err instanceof ZodError) {
@@ -94,11 +103,11 @@ async function request(req: Request): Promise<Response> {
 			if (err instanceof TypeError) {
 				console.error(err);
 			} else {
-				console.error(`❌ [${err.name}] ${url.pathname} ${err.message}`);
+				console.error(`❌ [${err.name}] ${pathname} ${err.message}`);
 			}
 		}
-		const accept = req.headers.get("accept") || "";
-		const clientRequestingJSON = requestingJsonFile || accept == "application/json";
+		const clientRequestingJSON = requestingJsonFile 
+			|| req.headers.get("accept") == "application/json";
 		if (data && clientRequestingJSON) {
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
 				if (!key.startsWith("_")) {
@@ -120,12 +129,12 @@ async function request(req: Request): Promise<Response> {
 				status: 502,
 			});
 		}
-		if (route.body && (accept == "*/*" || accept.indexOf("text/html") > -1)) {
-			let head = route.head ? route.head(data, err) : null;
+		if (route.body) {
 			const body = route.body(data, err);
 			if (body instanceof Response) {
 				return body;
 			}
+			let head = route.head ? route.head(data, err) : null;
 			return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body), {
 				headers: {
 					"Content-Type": "text/html; charset=utf-8",
@@ -133,7 +142,7 @@ async function request(req: Request): Promise<Response> {
 			});
 		}
 	}
-	const file = Bun.file(path.join("public", url.pathname));
+	const file = Bun.file(path.join("public", pathname));
 	if (await file.exists()) {
 		let response = new Response(file);
 		if (env == "prod") {
@@ -142,7 +151,7 @@ async function request(req: Request): Promise<Response> {
 		return response;
 	}
 	if (env == "dev") {
-		console.log(`⚠️ 404: [${req.method}] ${url.pathname}`);
+		console.log(`⚠️ 404: [${req.method}] ${pathname}`);
 	}
 	if (notFound && notFound.body) {
 		const head = notFound.head ? notFound.head(null) : null;
@@ -167,9 +176,10 @@ export default {
 	hostname,
 	port,
 	fetch: async (req: Request) => {
-		const acceptEncoding = req.headers.get("accept-encoding")?.split(", ") || [];
 		const res = await request(req);
-		if (compress && acceptEncoding.includes("gzip")) {
+		if (!compress) return res;
+		const acceptEncoding = req.headers.get("accept-encoding")?.split(", ") || [];
+		if (acceptEncoding.includes("gzip")) {
 			const buffer = await res.arrayBuffer();
 			res.headers.append("Content-Encoding", "gzip");
 			return new Response(Bun.gzipSync(new Uint8Array(buffer)), {
