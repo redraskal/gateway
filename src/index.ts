@@ -1,5 +1,7 @@
 import { existsSync, mkdirSync } from "fs";
 import path from "path";
+import { ZodError } from "zod";
+import { ZodErrorWithMessage } from "./exports";
 import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
 import { openVSCode, parseBoolean, walk } from "./utils";
@@ -86,6 +88,9 @@ async function request(req: Request): Promise<Response> {
 			data = route.data ? await route.data(req, match) : null;
 		} catch (e: any) {
 			err = e;
+			if (err instanceof ZodError) {
+				err = new ZodErrorWithMessage(err.issues);
+			}
 			if (err instanceof TypeError) {
 				console.error(err);
 			} else {
@@ -108,6 +113,7 @@ async function request(req: Request): Promise<Response> {
 			return Response.json({
 				error: {
 					type: err.name,
+					issues: (err instanceof ZodError) ? err.issues : undefined,
 					message: err.message,
 				},
 			}, {
