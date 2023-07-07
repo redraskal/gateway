@@ -1,3 +1,4 @@
+import { existsSync, mkdirSync } from "fs";
 import path from "path";
 import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
@@ -25,6 +26,10 @@ if (!debug) {
 
 if (fileGen) {
 	const filePath = path.join("pages", fileGen.endsWith(".ts") ? fileGen : `${fileGen}.ts`);
+	const folderPath = filePath.split("/").slice(0, -1).join("/");
+	if (!existsSync(folderPath)) {
+		mkdirSync(folderPath);
+	}
 	const file = Bun.file(filePath);
 	if (await file.exists()) {
 		console.error(`❌ ${file.name} already exists.`);
