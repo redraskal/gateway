@@ -1,6 +1,6 @@
 {
   "name": "gateway",
-  "description": "Experimental Bun web framework",
+  "description": "Experimental Bun web framework.",
   "module": "src/index.ts",
   "type": "module",
   "version": "0.1.0",
@@ -9,6 +9,7 @@
     "url": "https://github.com/redraskal",
     "email": "ben@ryben.dev"
   },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/redraskal/gateway"
@@ -17,6 +18,8 @@
   "homepage": "https://github.com/redraskal/gateway",
   "files": [
     "src/*.ts",
+    "src/bin.sh",
+    "gen/*.ts",
     "LICENSE",
     "package.json"
   ],
