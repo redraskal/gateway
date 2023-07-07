@@ -43,4 +43,21 @@ export class Route {
 		}
 		return null;
 	}
+
+	/**
+	 * Read the body from the Request into a JSON object.
+	 * 
+	 * This supports JSON bodies and FormData.
+	 * 
+	 * @param req Request
+	 * @returns Promise<T> - JSON object
+	 */
+	static async body<T>(req: Request) {
+		const formData = await this.formData(req);
+		if (formData) {
+			return Array.from(formData.entries())
+				.reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {}) as T;
+		}
+		return await this.json<T>(req);
+	}
 };
