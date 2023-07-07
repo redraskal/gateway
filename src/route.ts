@@ -72,6 +72,10 @@ export class Route {
 	 */
 	static async zod<T>(req: Request, schema: z.ZodType<T>) {
 		const data = await this.body(req);
-		return await schema.parseAsync(data);
+		if (data) {
+			return await schema.parseAsync(data);
+		} else {
+			return null;
+		}
 	}
 };
