@@ -7,8 +7,10 @@
 * Server-side rendered HTML (SSR)
 * [Next.js-style filesystem router](https://bun.sh/docs/api/file-system-router) (pages/)
 * Class-based routes
-* Automatic JSON responses on all routes
+* JSON responses on all routes via application/json Accept header
+* JSON file routes (example: /articles/bun.json)
 * Automatic JSON error responses
+* Zod Request body parsing (Route.zod)
 * Static file serving & caching (public/)
 * Compression (gzip)
 * Optional entrypoint (src/index.ts)
@@ -20,11 +22,13 @@ import { Data, Route, html } from "gateway";
 
 export default class implements Route {
 	async data(req: Request) {
-		const form = await Route.formData(req);
+		const data = await Route.body<{ // parse JSON or form Request body
+			name: string;
+		}>(req);
 		return {
 			time: new Date(Date.now()).toLocaleString(),
-			name: form?.get("name") || "world",
-			_secret: "yes", // hidden in JSON responses
+			name: data?.name || "world",
+			_secret: "yes", // omitted in JSON responses
 		};
 	}
 
