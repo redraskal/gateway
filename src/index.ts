@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from "fs";
 import path from "path";
 import { ZodError } from "zod";
-import { ZodErrorWithMessage } from "./exports";
+import { RouteError, ZodErrorWithMessage } from "./exports";
 import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
 import { openVSCode, parseBoolean, walk } from "./utils";
@@ -100,21 +100,27 @@ async function request(req: Request): Promise<Response> {
 		}
 		let data: any;
 		let err: any;
+		const clientRequestingJSON = requestingJsonFile 
+			|| req.headers.get("accept") == "application/json";
 		try {
 			data = route.data ? await route.data(req, match!) : null;
 		} catch (e: any) {
 			err = e;
-			if (err instanceof ZodError) {
-				err = new ZodErrorWithMessage(err.issues);
-			}
-			if (err instanceof TypeError) {
-				console.error(err);
-			} else {
-				console.error(`❌ [${err.name}] ${pathname} ${err.message}`);
+			console.error(`❌ [${err.name}] ${pathname} ${err.message}`);
+			switch (err.constructor) {
+				case ZodError:
+					err = new ZodErrorWithMessage(err.issues);
+					break;
+				case TypeError:
+					console.error(err);
+					break;
+				case RouteError:
+					if (err.redirect && !clientRequestingJSON) {
+						return Response.redirect(err.redirect);
+					}
+					break;
 			}
 		}
-		const clientRequestingJSON = requestingJsonFile 
-			|| req.headers.get("accept") == "application/json";
 		if (data && clientRequestingJSON) {
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
 				if (key.charAt(0) != '_') {
