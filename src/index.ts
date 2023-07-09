@@ -143,16 +143,23 @@ async function request(req: Request): Promise<Response> {
 			});
 		}
 		if (route.body) {
-			const body = route.body(data, err);
-			if (body instanceof Response) {
-				return body;
+			try {
+				const body = route.body(data, err);
+				if (body instanceof Response) {
+					return body;
+				}
+				let head = route.head ? route.head(data, err) : null;
+				return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body), {
+					headers: {
+						"Content-Type": "text/html; charset=utf-8",
+					},
+				});
+			} catch (err: any) {
+				if (err instanceof RouteError && err.redirect) {
+					return Response.redirect(err.redirect);
+				}
+				console.error(err);
 			}
-			let head = route.head ? route.head(data, err) : null;
-			return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body), {
-				headers: {
-					"Content-Type": "text/html; charset=utf-8",
-				},
-			});
 		}
 	}
 	const file = Bun.file(path.join("public", pathname));
