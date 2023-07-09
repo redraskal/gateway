@@ -50,6 +50,11 @@ if (env == "dev") {
 	console.log(`⚠️ Watch mode is not yet stable.`);
 }
 
+const appIndex = path.join(process.cwd(), "src/index.ts");
+if (await Bun.file(appIndex).exists()) {
+	await import(appIndex);
+}
+
 const pages = new Map<string, Route>();
 console.log("📁 Loading routes...");
 for await (const file of walk("./pages", ["ts"])) {
@@ -67,11 +72,6 @@ const defaultHead = html`
 `;
 
 console.log(`🌌 Server running at ${hostname}:${port} / http://127.0.0.1:${port}`);
-
-const appIndex = path.join(process.cwd(), "src/index.ts");
-if (await Bun.file(appIndex).exists()) {
-	await import(appIndex);
-}
 
 async function request(req: Request): Promise<Response> {
 	let slashes = 0;
