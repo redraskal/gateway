@@ -156,6 +156,7 @@ async function request(req: Request): Promise<Response> {
 				});
 			} catch (err: any) {
 				if (err instanceof RouteError && err.redirect) {
+					console.error(`❌ [${err.name}] ${pathname} ${err.message}`);
 					return Response.redirect(err.redirect);
 				}
 				console.error(err);
