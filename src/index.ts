@@ -15,7 +15,7 @@ export type Environment = "dev" | "prod";
 
 const hostname = process.env.GATEWAY_HOSTNAME || "0.0.0.0";
 const port = process.env.GATEWAY_PORT || "3000";
-export const env = process.env.GATEWAY_ENV?.toLowerCase() as Environment || "prod";
+export const env = (process.env.GATEWAY_ENV?.toLowerCase() as Environment) || "prod";
 const debug = process.env.GATEWAY_DEBUG ? parseBoolean(process.env.GATEWAY_DEBUG) : false;
 const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
 const throwJSONErrors = process.env.GATEWAY_JSON_ERRORS ? parseBoolean(process.env.GATEWAY_JSON_ERRORS) : true;
@@ -68,7 +68,7 @@ const notFound = pages.get("404.ts");
 
 const defaultHead = html`
 	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
 `;
 
 console.log(`🌌 Server running at ${hostname}:${port} / http://127.0.0.1:${port}`);
@@ -81,13 +81,13 @@ async function request(req: Request): Promise<Response> {
 	let requestingJsonFile = false;
 	for (let i = 0; i < req.url.length; i++) {
 		char = req.url.charAt(i);
-		if (char == '/') {
+		if (char == "/") {
 			if (slashes == 2) {
 				pathname = req.url.slice(i);
 			}
 			slashes++;
 		}
-		if (i == jsonExtensionOffset && char == '.' && req.url.slice(i) == ".json") {
+		if (i == jsonExtensionOffset && char == "." && req.url.slice(i) == ".json") {
 			pathname = pathname.slice(0, pathname.length - 5);
 			requestingJsonFile = true;
 		}
@@ -100,8 +100,7 @@ async function request(req: Request): Promise<Response> {
 		}
 		let data: any;
 		let err: any;
-		const clientRequestingJSON = requestingJsonFile 
-			|| req.headers.get("accept") == "application/json";
+		const clientRequestingJSON = requestingJsonFile || req.headers.get("accept") == "application/json";
 		try {
 			data = route.data ? await route.data(req, match!) : null;
 		} catch (e: any) {
@@ -123,7 +122,7 @@ async function request(req: Request): Promise<Response> {
 		}
 		if (data && clientRequestingJSON) {
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
-				if (key.charAt(0) != '_') {
+				if (key.charAt(0) != "_") {
 					// @ts-ignore
 					obj[key] = value;
 				}
@@ -132,15 +131,18 @@ async function request(req: Request): Promise<Response> {
 			return Response.json(sanitized);
 		}
 		if (!data && err && clientRequestingJSON && throwJSONErrors) {
-			return Response.json({
-				error: {
-					type: err.name,
-					issues: (err instanceof ZodError) ? err.issues : undefined,
-					message: err.message,
+			return Response.json(
+				{
+					error: {
+						type: err.name,
+						issues: err instanceof ZodError ? err.issues : undefined,
+						message: err.message,
+					},
 				},
-			}, {
-				status: 502,
-			});
+				{
+					status: 502,
+				}
+			);
 		}
 		if (route.body) {
 			try {
@@ -180,12 +182,15 @@ async function request(req: Request): Promise<Response> {
 		if (body instanceof Response) {
 			return body;
 		}
-		return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body as unknown as HTMLTemplateString), {
-			headers: {
-				"Content-Type": "text/html; charset=utf-8",
-			},
-			status: 404,
-		});
+		return new Response(
+			page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body as unknown as HTMLTemplateString),
+			{
+				headers: {
+					"Content-Type": "text/html; charset=utf-8",
+				},
+				status: 404,
+			}
+		);
 	} else {
 		return new Response("", {
 			status: 404,

@@ -23,4 +23,4 @@ export default function (strings: TemplateStringsArray, ...values: unknown[]): H
 	return {
 		value: html,
 	};
-};
+}

@@ -5,9 +5,9 @@ export * from "./route";
 
 export class ZodErrorWithMessage extends ZodError {
 	get message(): string {
-		return this.issues.map(issue => issue.message).join(", ");
+		return this.issues.map((issue) => issue.message).join(", ");
 	}
-};
+}
 
 export class RouteError extends Error {
 	readonly redirect?: string;
@@ -17,4 +17,4 @@ export class RouteError extends Error {
 		this.redirect = redirect;
 		this.name = "RouteError";
 	}
-};
+}

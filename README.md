@@ -4,25 +4,26 @@
 
 ## Features:
 
-* Server-side rendered HTML (SSR)
-* [Next.js-style filesystem router](https://bun.sh/docs/api/file-system-router) (pages/)
-* Class-based routes
-* JSON responses on all routes via application/json Accept header
-* JSON file routes (example: /articles/bun.json)
-* Automatic JSON error responses
-* Zod Request body parsing (Route.zod)
-* Static file serving & caching (public/)
-* Compression (gzip)
-* Optional entrypoint (src/index.ts)
-* Optional 404 page (pages/404.ts)
-* Route file generator via CLI (bun gen)
+- Server-side rendered HTML (SSR)
+- [Next.js-style filesystem router](https://bun.sh/docs/api/file-system-router) (pages/)
+- Class-based routes
+- JSON responses on all routes via application/json Accept header
+- JSON file routes (example: /articles/bun.json)
+- Automatic JSON error responses
+- Zod Request body parsing (Route.zod)
+- Static file serving & caching (public/)
+- Compression (gzip)
+- Optional entrypoint (src/index.ts)
+- Optional 404 page (pages/404.ts)
+- Route file generator via CLI (bun gen)
 
 ```ts
 import { Data, Route, html } from "gateway";
 
 export default class implements Route {
 	async data(req: Request) {
-		const data = await Route.body<{ // parse JSON or form Request body
+		// parse JSON or form Request body
+		const data = await Route.body<{
 			name: string;
 		}>(req);
 		return {
@@ -33,9 +34,7 @@ export default class implements Route {
 	}
 
 	head(data: Data<this>) {
-		return html`
-			<title>Hello ${data.name}!</title>
-		`;
+		return html`<title>Hello ${data.name}!</title>`;
 	}
 
 	body(data: Data<this>) {
@@ -43,19 +42,16 @@ export default class implements Route {
 			<h1>Hello ${data.name} at ${data.time}!</h1>
 			<form method="post">
 				<label for="name">Name</label>
-				<input type="text" id="name" name="name" autofocus required>
+				<input type="text" id="name" name="name" autofocus required />
 				<input type="submit" value="Submit" />
 			</form>
 		`;
 	}
-};
+}
 ```
 
-## Soon...
-- [ ] Authentication
-- [ ] Middleware
-
 ## To install Bun:
+
 ```bash
 curl -fsSL https://bun.sh/install | bash
 ```
@@ -80,15 +76,15 @@ bun start
 
 ## Environmental variables:
 
-| Name | Description | Default |
-| --- | --- | --- |
-| GATEWAY_HOSTNAME | HTTP server hostname | 0.0.0.0 |
-| GATEWAY_PORT | HTTP server port | 3000 |
-| GATEWAY_ENV | Environment | prod with `bun start`, dev with `bun run dev` |
-| GATEWAY_DEBUG | console.debug output | false |
-| GATEWAY_CACHE_TTL | Cache-Control max age | 3600 |
-| GATEWAY_JSON_ERRORS | Whether to output errors in JSON responses | true |
-| GATEWAY_COMPRESS | Whether to compress responses | true with `bun start`, false with `bun run dev` |
+| Name                | Description                                | Default                                         |
+| ------------------- | ------------------------------------------ | ----------------------------------------------- |
+| GATEWAY_HOSTNAME    | HTTP server hostname                       | 0.0.0.0                                         |
+| GATEWAY_PORT        | HTTP server port                           | 3000                                            |
+| GATEWAY_ENV         | Environment                                | prod with `bun start`, dev with `bun run dev`   |
+| GATEWAY_DEBUG       | console.debug output                       | false                                           |
+| GATEWAY_CACHE_TTL   | Cache-Control max age                      | 3600                                            |
+| GATEWAY_JSON_ERRORS | Whether to output errors in JSON responses | true                                            |
+| GATEWAY_COMPRESS    | Whether to compress responses              | true with `bun start`, false with `bun run dev` |
 
 ## To generate a route:
 
