@@ -1,43 +1,43 @@
 {
-  "name": "gateway",
-  "description": "Experimental Bun web framework.",
-  "module": "src/index.ts",
-  "type": "module",
-  "version": "0.1.0",
-  "author": {
-    "name": "redraskal",
-    "url": "https://github.com/redraskal",
-    "email": "ben@ryben.dev"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/redraskal/gateway"
-  },
-  "bugs": "https://github.com/redraskal/gateway/issues",
-  "homepage": "https://github.com/redraskal/gateway",
-  "files": [
-    "src/*.ts",
-    "src/bin.sh",
-    "gen/*.ts",
-    "LICENSE",
-    "package.json"
-  ],
-  "main": "./src/exports.ts",
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "scripts": {
-    "prettier": "prettier --write ."
-  },
-  "bin": {
-    "gateway": "src/bin.sh"
-  },
-  "dependencies": {
-    "prettier": "^3.0.0",
-    "zod": "^3.21.4"
-  }
+	"name": "gateway",
+	"description": "Experimental Bun web framework.",
+	"module": "src/index.ts",
+	"type": "module",
+	"version": "0.1.0",
+	"author": {
+		"name": "redraskal",
+		"url": "https://github.com/redraskal",
+		"email": "ben@ryben.dev"
+	},
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/redraskal/gateway"
+	},
+	"bugs": "https://github.com/redraskal/gateway/issues",
+	"homepage": "https://github.com/redraskal/gateway",
+	"files": [
+		"src/*.ts",
+		"src/bin.sh",
+		"gen/*.ts",
+		"LICENSE",
+		"package.json"
+	],
+	"main": "./src/exports.ts",
+	"devDependencies": {
+		"bun-types": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"scripts": {
+		"prettier": "prettier --write ."
+	},
+	"bin": {
+		"gateway": "src/bin.sh"
+	},
+	"dependencies": {
+		"prettier": "^3.0.0",
+		"zod": "^3.21.4"
+	}
 }

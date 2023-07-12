@@ -1,14 +1,23 @@
-import { MatchedRoute } from "bun";
+import { MatchedRoute, ServerWebSocket } from "bun";
 import { HTMLTemplateString } from "./html";
 import { z } from "zod";
+import { WebSocketContext } from "./ws";
 
 export type Resolved<T> = T extends Promise<infer R> ? R : T;
 // @ts-ignore
 export type Data<T extends Route> = Resolved<ReturnType<T["data"]>>;
 export type RouteResponse = HTMLTemplateString | Response;
 
+export interface _RouteWebSocket {
+	open?: (ws: ServerWebSocket<WebSocketContext>) => void | Promise<void>;
+	message?: (ws: ServerWebSocket<WebSocketContext>, message: string | Uint8Array) => void | Promise<void>;
+	close?: (ws: ServerWebSocket<WebSocketContext>, code: number, message: string) => void | Promise<void>;
+}
+export type RouteWebSocket = _RouteWebSocket | Promise<_RouteWebSocket>;
+
 export interface Route {
 	data?(req: Request, route: MatchedRoute): any;
+	ws?(): RouteWebSocket;
 	head?<T extends Route>(data: Data<T>, err?: Error): HTMLTemplateString;
 	body?<T extends Route>(data: Data<T>, err?: Error): RouteResponse;
 }

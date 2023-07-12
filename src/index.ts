@@ -1,10 +1,12 @@
 import { existsSync, mkdirSync } from "fs";
 import path from "path";
 import { ZodError } from "zod";
-import { RouteError, ZodErrorWithMessage } from "./exports";
+import { RouteError, ZodErrorWithMessage } from "./error";
 import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
 import { openVSCode, parseBoolean, walk } from "./utils";
+import { MatchedRoute, Serve, Server, ServerWebSocket } from "bun";
+import { WebSocketContext } from "./ws";
 
 const router = new Bun.FileSystemRouter({
 	style: "nextjs",
@@ -61,7 +63,9 @@ for await (const file of walk("./pages", ["ts"])) {
 	console.log(`	🔗 ${file}`);
 	const absolute = path.join(process.cwd(), file);
 	const clazz = import.meta.require(absolute);
-	pages.set(file.split("/").slice(1).join("/"), new clazz.default());
+	const route = new clazz.default();
+	if (route.ws) route._ws = await route.ws();
+	pages.set(file.split("/").slice(1).join("/"), route);
 }
 
 const notFound = pages.get("404.ts");
@@ -73,12 +77,21 @@ const defaultHead = html`
 
 console.log(`🌌 Server running at ${hostname}:${port} / http://127.0.0.1:${port}`);
 
-async function request(req: Request): Promise<Response> {
+type Ctx = {
+	match: MatchedRoute | null;
+	route?: Route;
+	pathname: string;
+	requestingJsonFile: boolean;
+	upgraded: boolean;
+};
+
+function context(req: Request, server: Server): Ctx {
 	let slashes = 0;
 	let pathname = req.url;
 	let char;
 	const jsonExtensionOffset = req.url.length - 5;
 	let requestingJsonFile = false;
+
 	for (let i = 0; i < req.url.length; i++) {
 		char = req.url.charAt(i);
 		if (char == "/") {
@@ -92,20 +105,42 @@ async function request(req: Request): Promise<Response> {
 			requestingJsonFile = true;
 		}
 	}
+
 	const match = router.match(pathname);
-	const route = match ? pages.get(match.src) : null;
-	if (route) {
+	const route = match ? pages.get(match.src) : undefined;
+	const upgraded =
+		route && route.ws
+			? server.upgrade<WebSocketContext>(req, {
+					data: {
+						headers: req.headers,
+						route,
+						pathname,
+					},
+			  })
+			: false;
+
+	return {
+		match,
+		route,
+		pathname,
+		requestingJsonFile,
+		upgraded,
+	};
+}
+
+async function request(req: Request, ctx: Ctx): Promise<Response> {
+	if (ctx.route) {
 		if (env == "dev") {
-			console.log(`🔍 [${req.method}] ${pathname}`);
+			console.log(`🔍 [${req.method}] ${ctx.pathname}`);
 		}
 		let data: any;
 		let err: any;
-		const clientRequestingJSON = requestingJsonFile || req.headers.get("accept") == "application/json";
+		const clientRequestingJSON = ctx.requestingJsonFile || req.headers.get("accept") == "application/json";
 		try {
-			data = route.data ? await route.data(req, match!) : null;
+			data = ctx.route.data ? await ctx.route.data(req, ctx.match!) : null;
 		} catch (e: any) {
 			err = e;
-			console.error(`❌ [${err.name}] ${pathname} ${err.message}`);
+			console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
 			switch (err.constructor) {
 				case ZodError:
 					err = new ZodErrorWithMessage(err.issues);
@@ -144,28 +179,31 @@ async function request(req: Request): Promise<Response> {
 				}
 			);
 		}
-		if (route.body) {
+		if (ctx.route.body) {
 			try {
-				const body = route.body(data, err);
+				const body = ctx.route.body(data, err);
 				if (body instanceof Response) {
 					return body;
 				}
-				let head = route.head ? route.head(data, err) : null;
-				return new Response(page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body), {
-					headers: {
-						"Content-Type": "text/html; charset=utf-8",
-					},
-				});
+				let head = ctx.route.head ? ctx.route.head(data, err) : null;
+				return new Response(
+					page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body, ctx.route.ws != undefined),
+					{
+						headers: {
+							"Content-Type": "text/html; charset=utf-8",
+						},
+					}
+				);
 			} catch (err: any) {
 				if (err instanceof RouteError && err.redirect) {
-					console.error(`❌ [${err.name}] ${pathname} ${err.message}`);
+					console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
 					return Response.redirect(err.redirect);
 				}
 				console.error(err);
 			}
 		}
 	}
-	const file = Bun.file(path.join("public", pathname));
+	const file = Bun.file(path.join("public", ctx.pathname));
 	if (await file.exists()) {
 		let response = new Response(file);
 		if (env == "prod") {
@@ -174,16 +212,18 @@ async function request(req: Request): Promise<Response> {
 		return response;
 	}
 	if (env == "dev") {
-		console.log(`⚠️ 404: [${req.method}] ${pathname}`);
+		console.log(`⚠️ 404: [${req.method}] ${ctx.pathname}`);
 	}
 	if (notFound && notFound.body) {
 		const head = notFound.head ? notFound.head(null) : null;
 		const body = notFound.body(null);
-		if (body instanceof Response) {
-			return body;
-		}
+		if (body instanceof Response) return body;
 		return new Response(
-			page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body as unknown as HTMLTemplateString),
+			page(
+				head ? html`${defaultHead.value}${head.value}` : defaultHead,
+				body as unknown as HTMLTemplateString,
+				notFound.ws != undefined
+			),
 			{
 				headers: {
 					"Content-Type": "text/html; charset=utf-8",
@@ -201,11 +241,15 @@ async function request(req: Request): Promise<Response> {
 export default {
 	hostname,
 	port,
-	fetch: async (req: Request) => {
-		const res = await request(req);
+	development: env == "dev",
+	fetch: async (req: Request, server: Server) => {
+		const ctx = context(req, server);
+		if (ctx.upgraded) return;
+		const res = await request(req, ctx);
 		if (!compress) return res;
-		const acceptEncoding = req.headers.get("accept-encoding")?.split(", ") || [];
-		if (acceptEncoding.includes("gzip")) {
+		const acceptEncoding = req.headers.get("accept-encoding");
+		if (!acceptEncoding) return res;
+		if (acceptEncoding.indexOf("gzip") > -1) {
 			const buffer = await res.arrayBuffer();
 			res.headers.append("Content-Encoding", "gzip");
 			return new Response(Bun.gzipSync(new Uint8Array(buffer)), {
@@ -215,4 +259,22 @@ export default {
 		}
 		return res;
 	},
-};
+	websocket: {
+		perMessageDeflate: compress,
+		open: async (ws: ServerWebSocket<WebSocketContext>) => {
+			if (env == "dev") {
+				console.log(`📡 [WS] ${ws.data.pathname}`);
+			}
+			// @ts-ignore
+			if (ws.data.route._ws.open) await ws.data.route._ws.open(ws);
+		},
+		message: async (ws: ServerWebSocket<WebSocketContext>, message: string | Uint8Array) => {
+			// @ts-ignore
+			if (ws.data.route._ws.message) await ws.data.route._ws.message(ws, message);
+		},
+		close: async (ws: ServerWebSocket<WebSocketContext>, code: number, message: string) => {
+			// @ts-ignore
+			if (ws.data.route._ws.close) await ws.data.route._ws.close(ws, code, message);
+		},
+	},
+} satisfies Serve<WebSocketContext>;
