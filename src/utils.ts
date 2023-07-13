@@ -20,3 +20,9 @@ export function parseBoolean(s: string): boolean {
 export function openVSCode(filePath: string) {
 	Bun.spawn(["code", "-r", filePath]);
 }
+
+export async function runningWSL() {
+	const proc = Bun.spawn(["grep", "Microsoft", "/proc/version"], { stderr: "ignore" });
+	const text = await new Response(proc.stdout).text();
+	return text != "";
+}

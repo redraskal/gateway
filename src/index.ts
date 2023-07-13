@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import { RouteError, ZodErrorWithMessage } from "./error";
 import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
-import { openVSCode, parseBoolean, walk } from "./utils";
+import { openVSCode, parseBoolean, runningWSL, walk } from "./utils";
 import { MatchedRoute, Serve, Server, ServerWebSocket } from "bun";
 import { WebSocketContext } from "./ws";
 
@@ -48,8 +48,8 @@ if (fileGen) {
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 
-if (env == "dev") {
-	console.log(`⚠️ Watch mode is not yet stable.`);
+if (env == "dev" && (await runningWSL())) {
+	console.log(`⚠️ Watch mode does not function under /mnt in WSL.`);
 }
 
 const appIndex = path.join(process.cwd(), "src/index.ts");
