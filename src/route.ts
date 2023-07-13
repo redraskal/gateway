@@ -70,7 +70,7 @@ export class Route {
 					// @ts-ignore
 					[key]: obj[key] ? (obj[key] instanceof Array ? [...obj[key], value] : [obj[key], value]) : value,
 				}),
-				{}
+				{} as T
 			);
 		}
 		return await this.json<T>(req);
