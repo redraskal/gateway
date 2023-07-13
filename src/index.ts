@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, watch } from "fs";
 import path from "path";
 import { ZodError } from "zod";
 import { RouteError, ZodErrorWithMessage } from "./error";
@@ -10,7 +10,7 @@ import { WebSocketContext } from "./ws";
 
 declare global {
 	var reloads: number;
-	var ws: ServerWebSocket<any>;
+	var server: Server;
 }
 
 const router = new Bun.FileSystemRouter({
@@ -56,9 +56,8 @@ console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 globalThis.reloads ??= -1;
 globalThis.reloads++;
 
-if (globalThis.ws) {
-	globalThis.ws.publish("reload", "reload");
-	globalThis.ws.send("reload");
+if (globalThis.server) {
+	globalThis.server.publish("reload", "reload");
 }
 
 if (env == "dev" && (await runningWSL())) {
@@ -255,6 +254,21 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 	}
 }
 
+function watchPublic(server: Server) {
+	globalThis.server = server;
+	console.log("🔎 Watching ./public for changes...");
+	watch(
+		"./public",
+		{
+			persistent: false,
+			recursive: true,
+		},
+		() => {
+			server.publish("reload", "reload");
+		}
+	);
+}
+
 export default {
 	hostname,
 	port,
@@ -262,6 +276,7 @@ export default {
 	fetch: async (req: Request, server: Server) => {
 		const ctx = context(req, server);
 		if (ctx.upgraded) return;
+		if (env == "dev" && !globalThis.server) watchPublic(server);
 		const res = await request(req, ctx);
 		if (!compress) return res;
 		const acceptEncoding = req.headers.get("accept-encoding");
@@ -281,7 +296,6 @@ export default {
 		open: async (ws: ServerWebSocket<WebSocketContext>) => {
 			if (env == "dev") {
 				console.log(`📡 [WS] ${ws.data.pathname}`);
-				globalThis.ws = ws;
 				ws.subscribe("reload");
 			}
 			if (globalThis.reloads > 0 && ws.data.headers.get("sec-websocket-protocol") == "reconnect") {
