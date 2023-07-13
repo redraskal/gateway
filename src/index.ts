@@ -60,10 +60,6 @@ if (globalThis.server) {
 	globalThis.server.publish("reload", "reload");
 }
 
-if (env == "dev" && (await runningWSL())) {
-	console.log(`⚠️ Watch mode does not function under /mnt in WSL.`);
-}
-
 const appIndex = path.join(process.cwd(), "src/index.ts");
 if (await Bun.file(appIndex).exists()) {
 	await import(appIndex);
@@ -78,6 +74,20 @@ for await (const file of walk("./pages", ["ts"])) {
 	const route = new clazz.default();
 	if (route.ws) route._ws = await route.ws();
 	pages.set(file.split("/").slice(1).join("/"), route);
+}
+
+if (env == "dev") {
+	if (await runningWSL()) console.log(`⚠️ Watch mode does not function under /mnt in WSL.`);
+	watch(
+		"./pages",
+		{
+			persistent: false,
+			recursive: true,
+		},
+		(_: any, file: string) => {
+			if (!pages.has(file)) process.exit(8);
+		}
+	);
 }
 
 const notFound = pages.get("404.ts");
@@ -256,7 +266,7 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 
 function watchPublic(server: Server) {
 	globalThis.server = server;
-	console.log("🔎 Watching ./public for changes...");
+	console.log("🔎 Watching public/ for changes...");
 	watch(
 		"./public",
 		{
