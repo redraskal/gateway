@@ -8,6 +8,11 @@ import { openVSCode, parseBoolean, runningWSL, walk } from "./utils";
 import { MatchedRoute, Serve, Server, ServerWebSocket } from "bun";
 import { WebSocketContext } from "./ws";
 
+declare global {
+	var reloads: number;
+	var ws: ServerWebSocket<any>;
+}
+
 const router = new Bun.FileSystemRouter({
 	style: "nextjs",
 	dir: "./pages",
@@ -47,6 +52,14 @@ if (fileGen) {
 }
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
+
+globalThis.reloads ??= -1;
+globalThis.reloads++;
+
+if (globalThis.ws) {
+	globalThis.ws.publish("reload", "reload");
+	globalThis.ws.send("reload");
+}
 
 if (env == "dev" && (await runningWSL())) {
 	console.log(`⚠️ Watch mode does not function under /mnt in WSL.`);
@@ -187,7 +200,11 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 				}
 				let head = ctx.route.head ? ctx.route.head(data, err) : null;
 				return new Response(
-					page(head ? html`${defaultHead.value}${head.value}` : defaultHead, body, ctx.route.ws != undefined),
+					page(
+						head ? html`${defaultHead.value}${head.value}` : defaultHead,
+						body,
+						ctx.route.ws != undefined || env == "dev"
+					),
 					{
 						headers: {
 							"Content-Type": "text/html; charset=utf-8",
@@ -222,7 +239,7 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 			page(
 				head ? html`${defaultHead.value}${head.value}` : defaultHead,
 				body as unknown as HTMLTemplateString,
-				notFound.ws != undefined
+				notFound.ws != undefined || env == "dev"
 			),
 			{
 				headers: {
@@ -264,6 +281,12 @@ export default {
 		open: async (ws: ServerWebSocket<WebSocketContext>) => {
 			if (env == "dev") {
 				console.log(`📡 [WS] ${ws.data.pathname}`);
+				globalThis.ws = ws;
+				ws.subscribe("reload");
+			}
+			if (globalThis.reloads > 0 && ws.data.headers.get("sec-websocket-protocol") == "reconnect") {
+				ws.send("reload");
+				return;
 			}
 			// @ts-ignore
 			if (ws.data.route._ws.open) await ws.data.route._ws.open(ws);
