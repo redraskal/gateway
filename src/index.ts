@@ -131,7 +131,7 @@ function context(req: Request, server: Server): Ctx {
 	const match = router.match(pathname);
 	const route = match ? pages.get(match.src) : undefined;
 	const upgraded =
-		route && route.ws
+		route && (route.ws || env == "dev")
 			? server.upgrade<WebSocketContext>(req, {
 					data: {
 						headers: req.headers,
@@ -313,15 +313,15 @@ export default {
 				return;
 			}
 			// @ts-ignore
-			if (ws.data.route._ws.open) await ws.data.route._ws.open(ws);
+			if (ws.data.route._ws?.open) await ws.data.route._ws.open(ws);
 		},
 		message: async (ws: ServerWebSocket<WebSocketContext>, message: string | Uint8Array) => {
 			// @ts-ignore
-			if (ws.data.route._ws.message) await ws.data.route._ws.message(ws, message);
+			if (ws.data.route._ws?.message) await ws.data.route._ws.message(ws, message);
 		},
 		close: async (ws: ServerWebSocket<WebSocketContext>, code: number, message: string) => {
 			// @ts-ignore
-			if (ws.data.route._ws.close) await ws.data.route._ws.close(ws, code, message);
+			if (ws.data.route._ws?.close) await ws.data.route._ws.close(ws, code, message);
 		},
 	},
 } satisfies Serve<WebSocketContext>;
