@@ -18,7 +18,7 @@
 	"homepage": "https://github.com/redraskal/gateway",
 	"files": [
 		"src/*.ts",
-		"src/bin.sh",
+		"bin.sh",
 		"gen/*.ts",
 		"LICENSE",
 		"package.json"
@@ -34,7 +34,7 @@
 		"prettier": "prettier --write ."
 	},
 	"bin": {
-		"gateway": "src/bin.sh"
+		"gateway": "bin.sh"
 	},
 	"dependencies": {
 		"prettier": "^3.0.0",
