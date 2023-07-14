@@ -10,7 +10,7 @@
 - JSON responses on all routes via application/json Accept header
 - JSON file routes (example: /articles/bun.json)
 - Automatic JSON error responses
-- Zod Request body parsing (Route.zod)
+- Zod Request body parsing (zod())
 - Static file serving & caching (public/)
 - Compression (gzip)
 - Optional entrypoint (src/index.ts)
@@ -18,12 +18,12 @@
 - Route file generator via CLI (bun gen)
 
 ```ts
-import { Data, Route, html } from "gateway";
+import { Data, Route, html, parse } from "gateway";
 
 export default class implements Route {
 	async data(req: Request) {
 		// parse JSON or form Request body
-		const data = await Route.body<{
+		const data = await parse<{
 			name: string;
 		}>(req);
 		return {

@@ -23,73 +23,72 @@ export interface Route {
 
 const acceptedJSONMethods = ["POST", "PUT", "PATCH", "DELETE"];
 
-export class Route {
-	/**
-	 * Read the body from the Request as a {@link FormData} object.
-	 *
-	 * This first decodes the data from UTF-8, then parses it as a
-	 * `multipart/form-data` body or a `application/x-www-form-urlencoded` body.
-	 *
-	 * @param req Request
-	 * @returns Promise<FormData> - The body of the request as a {@link FormData}.
-	 */
-	static async formData(req: Request) {
-		if (req.method == "POST") {
-			return await req.formData();
-		}
-		return null;
-	}
+export class Route {}
 
-	/**
-	 * Read the body from the Request as a JSON object.
-	 *
-	 * @param req Request
-	 * @returns Promise<T> - JSON object
-	 */
-	static async json<T>(req: Request) {
-		if (req.headers.get("accept") == "application/json" && acceptedJSONMethods.includes(req.method)) {
-			return await req.json<T>();
-		}
-		return null;
+/**
+ * Read the body from the Request as a {@link FormData} object.
+ *
+ * This first decodes the data from UTF-8, then parses it as a
+ * `multipart/form-data` body or a `application/x-www-form-urlencoded` body.
+ *
+ * @param req Request
+ * @returns Promise<FormData> - The body of the request as a {@link FormData}.
+ */
+export async function formData(req: Request) {
+	if (req.method == "POST") {
+		return await req.formData();
 	}
+	return null;
+}
 
-	/**
-	 * Read the body from the Request into a JSON object.
-	 *
-	 * This supports JSON bodies and FormData.
-	 *
-	 * @param req Request
-	 * @returns Promise<T> - JSON object
-	 */
-	static async body<T>(req: Request) {
-		const formData = await this.formData(req);
-		if (formData) {
-			return Array.from(formData.entries()).reduce(
-				(obj, [key, value]) => ({
-					...obj,
-					// @ts-ignore
-					[key]: obj[key] ? (obj[key] instanceof Array ? [...obj[key], value] : [obj[key], value]) : value,
-				}),
-				{} as T
-			);
-		}
-		return await this.json<T>(req);
+/**
+ * Read the body from the Request as a JSON object.
+ *
+ * @param req Request
+ * @returns Promise<T> - JSON object
+ */
+export async function json<T>(req: Request) {
+	if (req.headers.get("accept") == "application/json" && acceptedJSONMethods.includes(req.method)) {
+		return await req.json<T>();
 	}
+	return null;
+}
 
-	/**
-	 * Read the body from the Request and parse using zod.
-	 *
-	 * This supports JSON bodies and FormData.
-	 *
-	 * @param req Request
-	 * @returns Promise<T> - JSON object
-	 */
-	static async zod<T>(req: Request, schema: z.ZodType<T>) {
-		const data = await this.body(req);
-		if (data) {
-			return await schema.parseAsync(data);
-		} else {
-			return null;
-		}
+/**
+ * Parses the body from the Request into a JSON object.
+ *
+ * This method supports JSON bodies and FormData.
+ *
+ * @param req Request
+ * @returns Promise<T> - JSON object
+ */
+export async function parse<T>(req: Request) {
+	const data = await formData(req);
+	if (data) {
+		return Array.from(data.entries()).reduce(
+			(obj, [key, value]) => ({
+				...obj,
+				// @ts-ignore
+				[key]: obj[key] ? (obj[key] instanceof Array ? [...obj[key], value] : [obj[key], value]) : value,
+			}),
+			{} as T
+		);
 	}
+	return await json<T>(req);
+}
+
+/**
+ * Read the body from the Request and parse using zod.
+ *
+ * This supports JSON bodies and FormData.
+ *
+ * @param req Request
+ * @returns Promise<T> - JSON object
+ */
+export async function zod<T>(req: Request, schema: z.ZodType<T>) {
+	const data = await parse(req);
+	if (data) {
+		return await schema.parseAsync(data);
+	}
+	return null;
 }

@@ -1,11 +1,12 @@
-import { existsSync, mkdirSync, watch } from "fs";
+import { watch } from "fs";
 import path from "path";
 import { ZodError } from "zod";
 import { RouteError, ZodErrorWithMessage } from "./error";
 import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
-import { openVSCode, parseBoolean, runningWSL, walk } from "./utils";
-import { MatchedRoute, Serve, Server, ServerWebSocket } from "bun";
+import { generateFile, parseBoolean, runningWSL, walk } from "./utils";
+import { MatchedRoute, Server, ServerWebSocket } from "bun";
+import type { Serve } from "bun";
 import { WebSocketContext } from "./ws";
 
 declare global {
@@ -23,32 +24,20 @@ export type Environment = "dev" | "prod";
 const hostname = process.env.GATEWAY_HOSTNAME || "0.0.0.0";
 const port = process.env.GATEWAY_PORT || "3000";
 export const env = (process.env.GATEWAY_ENV?.toLowerCase() as Environment) || "prod";
+
 const debug = process.env.GATEWAY_DEBUG ? parseBoolean(process.env.GATEWAY_DEBUG) : false;
+
 const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
 const throwJSONErrors = process.env.GATEWAY_JSON_ERRORS ? parseBoolean(process.env.GATEWAY_JSON_ERRORS) : true;
 const compress = process.env.GATEWAY_COMPRESS ? parseBoolean(process.env.GATEWAY_COMPRESS) : env == "prod";
-const fileGen = process.env.GATEWAY_GEN;
 
-if (!debug) {
-	console.debug = () => {};
-}
+const generate = process.env.GATEWAY_GEN;
 
-if (fileGen) {
-	const filePath = path.join("pages", fileGen.endsWith(".ts") ? fileGen : `${fileGen}.ts`);
-	const folderPath = filePath.split("/").slice(0, -1).join("/");
-	if (!existsSync(folderPath)) {
-		mkdirSync(folderPath);
-	}
-	const file = Bun.file(filePath);
-	if (await file.exists()) {
-		console.error(`❌ ${file.name} already exists.`);
-		process.exit(-1);
-	}
-	const input = Bun.file(path.join(import.meta.dir, "../gen/route.ts"));
-	await Bun.write(file, await input.text());
-	console.log(`📝 ${file.name} created.`);
-	openVSCode(filePath);
-	process.exit(0);
+if (!debug) console.debug = () => {};
+
+if (generate) {
+	const created = await generateFile(generate);
+	process.exit(created ? 0 : -1);
 }
 
 console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
@@ -56,14 +45,10 @@ console.log(`ℹ️ env: ${env}, bun: ${Bun.version}`);
 globalThis.reloads ??= -1;
 globalThis.reloads++;
 
-if (globalThis.server) {
-	globalThis.server.publish("reload", "reload");
-}
+if (globalThis.server) globalThis.server.publish("reload", "reload");
 
 const appIndex = path.join(process.cwd(), "src/index.ts");
-if (await Bun.file(appIndex).exists()) {
-	await import(appIndex);
-}
+if (await Bun.file(appIndex).exists()) await import(appIndex);
 
 const pages = new Map<string, Route>();
 console.log("📁 Loading routes...");
@@ -91,7 +76,6 @@ if (env == "dev") {
 }
 
 const notFound = pages.get("404.ts");
-
 const defaultHead = html`
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
