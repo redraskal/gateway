@@ -22,7 +22,7 @@ export function openVSCode(filePath: string) {
 }
 
 export async function runningWSL() {
-	const proc = Bun.spawn(["grep", "Microsoft", "/proc/version"], { stderr: "ignore" });
+	const proc = Bun.spawn(["grep", "WSL", "/proc/version"], { stderr: "ignore" });
 	const text = await new Response(proc.stdout).text();
 	return text != "";
 }
