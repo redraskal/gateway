@@ -17,6 +17,8 @@ export default function (strings: TemplateStringsArray, ...values: unknown[]): H
 			let asHTML = value as HTMLTemplateString;
 			if (asHTML.value) {
 				html += asHTML.value;
+			} else if (value instanceof Array) {
+				html += value.map((e) => e.value).join("");
 			} else {
 				html += value;
 			}
