@@ -55,7 +55,7 @@ console.log("📁 Loading routes...");
 for await (const file of walk("./pages", ["ts"])) {
 	console.log(`	🔗 ${file}`);
 	const absolute = path.join(process.cwd(), file);
-	const clazz = import.meta.require(absolute);
+	const clazz = await import(absolute);
 	const route = new clazz.default();
 	if (route.ws) route._ws = route.ws();
 	pages.set(file.split("/").slice(1).join("/"), route);
