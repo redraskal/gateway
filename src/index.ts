@@ -6,7 +6,6 @@ import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
 import { generateFile, parseBoolean, runningWSL, walk } from "./utils";
 import { MatchedRoute, Server, ServerWebSocket } from "bun";
-import type { Serve } from "bun";
 import { WebSocketContext } from "./ws";
 
 declare global {
@@ -162,6 +161,7 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 			}
 		}
 		if (data && clientRequestingJSON) {
+			if (data instanceof Array) return Response.json(data);
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
 				if (key.charAt(0) != "_") {
 					// @ts-ignore
@@ -308,4 +308,4 @@ export default {
 			if (ws.data.route._ws?.close) await ws.data.route._ws.close(ws, code, message);
 		},
 	},
-} satisfies Serve<WebSocketContext>;
+};
