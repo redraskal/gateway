@@ -5,6 +5,6 @@ export * from "./route";
 export * from "./error";
 export * from "./ws";
 
-export function server(): Server {
-	return globalThis.server;
+declare global {
+	var server: Server;
 }
