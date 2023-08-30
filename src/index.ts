@@ -80,8 +80,6 @@ const defaultHead = html`
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 `;
 
-console.log(`🌌 Server running at ${hostname}:${port} / http://127.0.0.1:${port}`);
-
 type Ctx = {
 	match: MatchedRoute | null;
 	route?: Route;
@@ -248,29 +246,13 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 	}
 }
 
-function watchPublic(server: Server) {
-	globalThis.server = server;
-	console.log("🔎 Watching public/ for changes...");
-	watch(
-		"./public",
-		{
-			persistent: false,
-			recursive: true,
-		},
-		() => {
-			server.publish("reload", "reload");
-		}
-	);
-}
-
-export default {
+globalThis.server = Bun.serve<WebSocketContext>({
 	hostname,
 	port,
 	development: env == "dev",
 	fetch: async (req: Request, server: Server) => {
 		const ctx = context(req, server);
 		if (ctx.upgraded) return;
-		if (env == "dev" && !globalThis.server) watchPublic(server);
 		const res = await request(req, ctx);
 		if (!compress) return res;
 		const acceptEncoding = req.headers.get("accept-encoding");
@@ -308,4 +290,20 @@ export default {
 			if (ws.data.route._ws?.close) await ws.data.route._ws.close(ws, code, message);
 		},
 	},
-};
+});
+
+if (env == "dev") {
+	console.log("🔎 Watching public/ for changes...");
+	watch(
+		"./public",
+		{
+			persistent: false,
+			recursive: true,
+		},
+		() => {
+			server.publish("reload", "reload");
+		}
+	);
+}
+
+console.log(`🌌 Server running at ${server.hostname}:${server.port} / http://127.0.0.1:${port}`);
