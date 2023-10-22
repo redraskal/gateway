@@ -4,9 +4,10 @@ import { ZodError } from "zod";
 import { RouteError, ZodErrorWithMessage } from "./error";
 import html, { HTMLTemplateString, page } from "./html";
 import { Route } from "./route";
-import { generateFile, parseBoolean, runningWSL, walk } from "./utils";
+import { generateFile, parseBoolean, walk } from "./utils";
 import { MatchedRoute, Server, ServerWebSocket } from "bun";
 import { WebSocketContext } from "./ws";
+import { exists } from "fs/promises";
 
 declare global {
 	var reloads: number;
@@ -61,14 +62,13 @@ for await (const file of walk("./pages", ["ts"])) {
 }
 
 if (env == "dev") {
-	if (await runningWSL()) console.log(`⚠️ Watch mode does not function under /mnt in WSL.`);
 	watch(
 		"./pages",
 		{
 			persistent: false,
 			recursive: true,
 		},
-		(_: any, file: string) => {
+		(file: string) => {
 			if (!pages.has(file)) process.exit(8);
 		}
 	);
@@ -97,12 +97,14 @@ function context(req: Request, server: Server): Ctx {
 
 	for (let i = 0; i < req.url.length; i++) {
 		char = req.url.charAt(i);
+
 		if (char == "/") {
 			if (slashes == 2) {
 				pathname = req.url.slice(i);
 			}
 			slashes++;
 		}
+
 		if (i == jsonExtensionOffset && char == "." && req.url.slice(i) == ".json") {
 			pathname = pathname.slice(0, pathname.length - 5);
 			requestingJsonFile = true;
@@ -136,14 +138,17 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 		if (env == "dev") {
 			console.log(`🔍 [${req.method}] ${ctx.pathname}`);
 		}
+
 		let data: any;
 		let err: any;
 		const clientRequestingJSON = ctx.requestingJsonFile || req.headers.get("accept") == "application/json";
+
 		try {
 			data = ctx.route.data ? await ctx.route.data(req, ctx.match!) : null;
 		} catch (e: any) {
 			err = e;
 			console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
+
 			switch (err.constructor) {
 				case ZodError:
 					err = new ZodErrorWithMessage(err.issues);
@@ -158,8 +163,11 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 					break;
 			}
 		}
+
 		if (data && clientRequestingJSON) {
 			if (data instanceof Array) return Response.json(data);
+
+			// TODO: optimize or remove this feature
 			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
 				if (key.charAt(0) != "_") {
 					// @ts-ignore
@@ -167,8 +175,10 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 				}
 				return obj;
 			}, {});
+
 			return Response.json(sanitized);
 		}
+
 		if (!data && err && clientRequestingJSON && throwJSONErrors) {
 			return Response.json(
 				{
@@ -183,13 +193,17 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 				}
 			);
 		}
+
 		if (ctx.route.body) {
 			try {
 				const body = ctx.route.body(data, err);
+
 				if (body instanceof Response) {
 					return body;
 				}
+
 				let head = ctx.route.head ? ctx.route.head(data, err) : null;
+
 				return new Response(
 					page(
 						head ? html`${defaultHead.value}${head.value}` : defaultHead,
@@ -207,25 +221,34 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 					console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
 					return Response.redirect(err.redirect);
 				}
+
 				console.error(err);
 			}
 		}
 	}
+
 	const file = Bun.file(path.join("public", ctx.pathname));
+
 	if (await file.exists()) {
 		let response = new Response(file);
+
 		if (env == "prod") {
 			response.headers.set("Cache-Control", `max-age=${cacheTTL}`);
 		}
+
 		return response;
 	}
+
 	if (env == "dev") {
 		console.log(`⚠️ 404: [${req.method}] ${ctx.pathname}`);
 	}
+
 	if (notFound && notFound.body) {
 		const head = notFound.head ? notFound.head(null) : null;
 		const body = notFound.body(null);
+
 		if (body instanceof Response) return body;
+
 		return new Response(
 			page(
 				head ? html`${defaultHead.value}${head.value}` : defaultHead,
@@ -249,17 +272,25 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 globalThis.server = Bun.serve<WebSocketContext>({
 	hostname,
 	port,
+	reusePort: true,
 	development: env == "dev",
 	fetch: async (req: Request, server: Server) => {
 		const ctx = context(req, server);
+
 		if (ctx.upgraded) return;
+
 		const res = await request(req, ctx);
+
 		if (!compress) return res;
+
 		const acceptEncoding = req.headers.get("accept-encoding");
+
 		if (!acceptEncoding) return res;
+
 		if (acceptEncoding.indexOf("gzip") > -1) {
 			const buffer = await res.arrayBuffer();
 			res.headers.append("Content-Encoding", "gzip");
+
 			return new Response(Bun.gzipSync(new Uint8Array(buffer)), {
 				headers: res.headers,
 				status: res.status,
@@ -292,8 +323,8 @@ globalThis.server = Bun.serve<WebSocketContext>({
 	},
 });
 
-if (env == "dev") {
-	console.log("🔎 Watching public/ for changes...");
+if (env == "dev" && (await exists("./public"))) {
+	console.log(`🔎 Watching "public" for changes...`);
 	watch(
 		"./public",
 		{

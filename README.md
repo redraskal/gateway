@@ -65,7 +65,7 @@ bun create redraskal/gateway-template {dir}
 ## To run a development server:
 
 ```bash
-bun run dev
+bun dev
 ```
 
 ## To run a production server:

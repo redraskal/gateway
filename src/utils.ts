@@ -6,6 +6,7 @@ export async function* walk(directory: string, extensions: string[]): AsyncGener
 	// TODO: Use opendir, see https://bun.sh/docs/runtime/nodejs-apis#node_fs
 	for await (const child of await readdir(directory, { withFileTypes: true })) {
 		const joined = path.join(directory, child.name);
+
 		if (child.isDirectory()) {
 			yield* walk(joined, extensions);
 		} else if (extensions.includes(joined.split(".").pop()!)) {
@@ -22,24 +23,25 @@ export function openVSCode(filePath: string) {
 	Bun.spawn(["code", "-r", filePath]);
 }
 
-export async function runningWSL() {
-	const proc = Bun.spawn(["grep", "WSL", "/proc/version"], { stderr: "ignore" });
-	const text = await new Response(proc.stdout).text();
-	return text != "";
-}
-
 export async function generateFile(name: string) {
 	const filePath = path.join("pages", name.endsWith(".ts") ? name : `${name}.ts`);
 	const folderPath = filePath.split("/").slice(0, -1).join("/");
+
 	if (!existsSync(folderPath)) mkdirSync(folderPath);
+
 	const file = Bun.file(filePath);
+
 	if (await file.exists()) {
 		console.error(`❌ ${file.name} already exists.`);
 		return false;
 	}
+
 	const input = Bun.file(path.join(import.meta.dir, "../gen/route.ts"));
 	await Bun.write(file, await input.text());
+
 	console.log(`📝 ${file.name} created.`);
+
 	openVSCode(filePath);
+
 	return true;
 }

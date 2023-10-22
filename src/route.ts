@@ -38,6 +38,7 @@ export async function formData(req: Request) {
 	if (req.method == "POST") {
 		return await req.formData();
 	}
+
 	return null;
 }
 
@@ -51,6 +52,7 @@ export async function json<T>(req: Request) {
 	if (req.headers.get("accept") == "application/json" && acceptedJSONMethods.includes(req.method)) {
 		return await req.json<T>();
 	}
+
 	return null;
 }
 
@@ -87,8 +89,10 @@ export async function parse<T>(req: Request) {
  */
 export async function zod<T>(req: Request, schema: z.ZodType<T>) {
 	const data = await parse(req);
+
 	if (data) {
 		return await schema.parseAsync(data);
 	}
+
 	return null;
 }
