@@ -27,7 +27,7 @@ export async function generateFile(name: string) {
 	const filePath = path.join("pages", name.endsWith(".ts") ? name : `${name}.ts`);
 	const folderPath = filePath.split("/").slice(0, -1).join("/");
 
-	if (!existsSync(folderPath)) mkdirSync(folderPath);
+	if (!existsSync(folderPath)) mkdirSync(folderPath, { recursive: true });
 
 	const file = Bun.file(filePath);
 
