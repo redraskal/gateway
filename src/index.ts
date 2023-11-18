@@ -30,6 +30,9 @@ const debug = process.env.GATEWAY_DEBUG ? parseBoolean(process.env.GATEWAY_DEBUG
 const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
 const throwJSONErrors = process.env.GATEWAY_JSON_ERRORS ? parseBoolean(process.env.GATEWAY_JSON_ERRORS) : true;
 const compress = process.env.GATEWAY_COMPRESS ? parseBoolean(process.env.GATEWAY_COMPRESS) : env == "prod";
+const maxRequestBodySize = process.env.GATEWAY_MAX_REQUEST_BODY_SIZE
+	? Number(process.env.GATEWAY_MAX_REQUEST_BODY_SIZE)
+	: 1024 * 1024 * 128;
 
 const generate = process.env.GATEWAY_GEN;
 
@@ -274,6 +277,7 @@ globalThis.server = Bun.serve<WebSocketContext>({
 	port,
 	reusePort: true,
 	development: env == "dev",
+	maxRequestBodySize,
 	fetch: async (req: Request, server: Server) => {
 		const ctx = context(req, server);
 
