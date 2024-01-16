@@ -25,7 +25,7 @@ export default function (strings: TemplateStringsArray, ...values: unknown[]): H
 			}
 		}
 
-		html += strings[i].replaceAll(/[\n\t]/g, "");
+		html += strings[i];
 	}
 
 	return {

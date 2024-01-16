@@ -29,7 +29,6 @@ const debug = process.env.GATEWAY_DEBUG ? parseBoolean(process.env.GATEWAY_DEBUG
 
 const cacheTTL = Number.parseInt(process.env.GATEWAY_CACHE_TTL || "3600");
 const throwJSONErrors = process.env.GATEWAY_JSON_ERRORS ? parseBoolean(process.env.GATEWAY_JSON_ERRORS) : true;
-const compress = process.env.GATEWAY_COMPRESS ? parseBoolean(process.env.GATEWAY_COMPRESS) : env == "prod";
 const maxRequestBodySize = process.env.GATEWAY_MAX_REQUEST_BODY_SIZE
 	? Number(process.env.GATEWAY_MAX_REQUEST_BODY_SIZE)
 	: 1024 * 1024 * 128;
@@ -124,7 +123,7 @@ function context(req: Request, server: Server): Ctx {
 						route,
 						pathname,
 					},
-			  })
+				})
 			: false;
 
 	return {
@@ -280,30 +279,10 @@ globalThis.server = Bun.serve<WebSocketContext>({
 	maxRequestBodySize,
 	fetch: async (req: Request, server: Server) => {
 		const ctx = context(req, server);
-
 		if (ctx.upgraded) return;
-
-		const res = await request(req, ctx);
-
-		if (!compress) return res;
-
-		const acceptEncoding = req.headers.get("accept-encoding");
-
-		if (!acceptEncoding) return res;
-
-		if (acceptEncoding.indexOf("gzip") > -1) {
-			const buffer = await res.arrayBuffer();
-			res.headers.append("Content-Encoding", "gzip");
-
-			return new Response(Bun.gzipSync(new Uint8Array(buffer)), {
-				headers: res.headers,
-				status: res.status,
-			});
-		}
-		return res;
+		return await request(req, ctx);
 	},
 	websocket: {
-		perMessageDeflate: compress,
 		open: async (ws: ServerWebSocket<WebSocketContext>) => {
 			if (env == "dev") {
 				console.log(`📡 [WS] ${ws.data.pathname}`);

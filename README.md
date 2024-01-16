@@ -12,7 +12,6 @@
 - Automatic JSON error responses
 - Zod Request body parsing (zod())
 - Static file serving & caching (public/)
-- Compression (gzip)
 - Optional entrypoint (src/index.ts)
 - Optional 404 page (pages/404.ts)
 - Route file generator via CLI (bun gen)
@@ -76,15 +75,14 @@ bun start
 
 ## Environmental variables:
 
-| Name                | Description                                | Default                                         |
-| ------------------- | ------------------------------------------ | ----------------------------------------------- |
-| GATEWAY_HOSTNAME    | HTTP server hostname                       | 0.0.0.0                                         |
-| GATEWAY_PORT        | HTTP server port                           | 3000                                            |
-| GATEWAY_ENV         | Environment                                | prod with `bun start`, dev with `bun run dev`   |
-| GATEWAY_DEBUG       | console.debug output                       | false                                           |
-| GATEWAY_CACHE_TTL   | Cache-Control max age                      | 3600                                            |
-| GATEWAY_JSON_ERRORS | Whether to output errors in JSON responses | true                                            |
-| GATEWAY_COMPRESS    | Whether to compress responses              | true with `bun start`, false with `bun run dev` |
+| Name                | Description                                | Default                                       |
+| ------------------- | ------------------------------------------ | --------------------------------------------- |
+| GATEWAY_HOSTNAME    | HTTP server hostname                       | 0.0.0.0                                       |
+| GATEWAY_PORT        | HTTP server port                           | 3000                                          |
+| GATEWAY_ENV         | Environment                                | prod with `bun start`, dev with `bun run dev` |
+| GATEWAY_DEBUG       | console.debug output                       | false                                         |
+| GATEWAY_CACHE_TTL   | Cache-Control max age                      | 3600                                          |
+| GATEWAY_JSON_ERRORS | Whether to output errors in JSON responses | true                                          |
 
 ## To generate a route:
 
