@@ -69,7 +69,7 @@ if (process.env.GATEWAY_BUILD) {
 		process.env.GATEWAY_BUILD != "1" && process.env.GATEWAY_BUILD != "" ? process.env.GATEWAY_BUILD : "dist";
 	console.log("🏗️ Building...");
 	if (await exists(buildDir)) {
-		await rmdir(buildDir);
+		await rmdir(buildDir, { recursive: true });
 	}
 	await mkdir(buildDir);
 	if (useStaticFiles) {
@@ -78,7 +78,7 @@ if (process.env.GATEWAY_BUILD) {
 	for await (let [key, route] of pages.entries()) {
 		const file = Bun.file(path.join(buildDir, key + ".html"));
 		// @ts-ignore
-		const data = route.data ? await route.data(null, null) : null;
+		const data = route.data ? await route.data(new Request(`/${key}`), {}) : null;
 		const head = route.head ? route.head(data) : "";
 		const body = route.body ? route.body(data) : "";
 		console.log(file);
