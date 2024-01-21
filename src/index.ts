@@ -87,26 +87,33 @@ type Ctx = {
 };
 
 function context(req: Request, server: Server): Ctx {
-	let slashes = 0;
+	let slashes = 0,
+		sliceStart = -1;
 	let pathname = req.url;
 	let char;
 	const jsonExtensionOffset = req.url.length - 5;
-	let requestingJsonFile = false;
+	let requestingJsonFile = req.headers.get("accept") == "application/json";
 
 	for (let i = 0; i < req.url.length; i++) {
 		char = req.url.charAt(i);
 
 		if (char == "/") {
 			if (slashes == 2) {
-				pathname = req.url.slice(i);
+				sliceStart = i;
 			}
 			slashes++;
 		}
 
-		if (i == jsonExtensionOffset && char == "." && req.url.slice(i) == ".json") {
-			pathname = pathname.slice(0, pathname.length - 5);
+		if (char == "." && i <= jsonExtensionOffset && req.url.slice(i + 1, i + 5) == "json") {
+			pathname = pathname.slice(sliceStart, i) + pathname.slice(i + 5);
+			sliceStart = -1;
 			requestingJsonFile = true;
+			break;
 		}
+	}
+
+	if (sliceStart != -1) {
+		pathname = req.url.slice(sliceStart);
 	}
 
 	const match = router.match(pathname);
@@ -139,7 +146,6 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 
 		let data: any;
 		let err: any;
-		const clientRequestingJSON = ctx.requestingJsonFile || req.headers.get("accept") == "application/json";
 
 		try {
 			data = ctx.route.data ? await ctx.route.data(req, ctx.match!) : null;
@@ -155,14 +161,14 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 					console.error(err);
 					break;
 				case RouteError:
-					if (err.redirect && !clientRequestingJSON) {
+					if (err.redirect && !ctx.requestingJsonFile) {
 						return Response.redirect(err.redirect);
 					}
 					break;
 			}
 		}
 
-		if (data && clientRequestingJSON) {
+		if (data && ctx.requestingJsonFile) {
 			if (data instanceof Array) return Response.json(data);
 
 			// TODO: optimize or remove this feature
@@ -177,7 +183,7 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 			return Response.json(sanitized);
 		}
 
-		if (!data && err && clientRequestingJSON && throwJSONErrors) {
+		if (!data && err && ctx.requestingJsonFile && throwJSONErrors) {
 			return Response.json(
 				{
 					error: {
