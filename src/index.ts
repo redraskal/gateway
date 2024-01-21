@@ -2,7 +2,7 @@ import { watch } from "fs";
 import path from "path";
 import { ZodError } from "zod";
 import { RouteError, ZodErrorWithMessage } from "./error";
-import html, { HTMLTemplateString, page } from "./html";
+import { page } from "./html";
 import { Route } from "./route";
 import { generateFile, parseBoolean, walk } from "./utils";
 import { MatchedRoute, Server, ServerWebSocket } from "bun";
@@ -77,10 +77,6 @@ if (env == "dev") {
 }
 
 const notFound = pages.get("404.ts");
-const defaultHead = html`
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-`;
 
 type Ctx = {
 	match: MatchedRoute | null;
@@ -204,20 +200,13 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 					return body;
 				}
 
-				let head = ctx.route.head ? ctx.route.head(data, err) : null;
+				let head = ctx.route.head ? ctx.route.head(data, err) : "";
 
-				return new Response(
-					page(
-						head ? html`${defaultHead.value}${head.value}` : defaultHead,
-						body,
-						ctx.route.ws != undefined || env == "dev"
-					),
-					{
-						headers: {
-							"Content-Type": "text/html; charset=utf-8",
-						},
-					}
-				);
+				return new Response(page(head, body, ctx.route.ws != undefined || env == "dev"), {
+					headers: {
+						"Content-Type": "text/html; charset=utf-8",
+					},
+				});
 			} catch (err: any) {
 				if (err instanceof RouteError && err.redirect) {
 					console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
@@ -246,24 +235,17 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 	}
 
 	if (notFound && notFound.body) {
-		const head = notFound.head ? notFound.head(null) : null;
+		const head = notFound.head ? notFound.head(null) : "";
 		const body = notFound.body(null);
 
 		if (body instanceof Response) return body;
 
-		return new Response(
-			page(
-				head ? html`${defaultHead.value}${head.value}` : defaultHead,
-				body as unknown as HTMLTemplateString,
-				notFound.ws != undefined || env == "dev"
-			),
-			{
-				headers: {
-					"Content-Type": "text/html; charset=utf-8",
-				},
-				status: 404,
-			}
-		);
+		return new Response(page(head, body as string, notFound.ws != undefined || env == "dev"), {
+			headers: {
+				"Content-Type": "text/html; charset=utf-8",
+			},
+			status: 404,
+		});
 	} else {
 		return new Response("", {
 			status: 404,

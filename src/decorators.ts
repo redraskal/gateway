@@ -1,4 +1,3 @@
-import { HTMLTemplateString } from "./html";
 import { Route, RouteResponse } from "./route";
 
 export function cache(component?: "head" | "body") {
@@ -8,7 +7,7 @@ export function cache(component?: "head" | "body") {
 				super(...args);
 
 				// TODO: this.data() support?
-				let head: HTMLTemplateString, body: RouteResponse;
+				let head: string, body: RouteResponse;
 
 				if (this.head && (!component || component == "head")) {
 					head = this.head({});
