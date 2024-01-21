@@ -7,7 +7,7 @@ import { Route } from "./route";
 import { generateFile, parseBoolean, walk } from "./utils";
 import { MatchedRoute, Server, ServerWebSocket } from "bun";
 import { WebSocketContext } from "./ws";
-import { exists } from "fs/promises";
+import { exists, mkdir, cp, rmdir } from "fs/promises";
 
 declare global {
 	var reloads: number;
@@ -34,6 +34,7 @@ const maxRequestBodySize = process.env.GATEWAY_MAX_REQUEST_BODY_SIZE
 	: 1024 * 1024 * 128;
 
 const generate = process.env.GATEWAY_GEN;
+const useStaticFiles = await exists("./public");
 
 if (!debug) console.debug = () => {};
 
@@ -61,6 +62,28 @@ for await (const file of walk("./pages", ["ts"])) {
 	const route = new clazz.default();
 	if (route.ws) route._ws = route.ws();
 	pages.set(file.split("/").slice(1).join("/"), route);
+}
+
+if (process.env.GATEWAY_BUILD) {
+	const buildDir =
+		process.env.GATEWAY_BUILD != "1" && process.env.GATEWAY_BUILD != "" ? process.env.GATEWAY_BUILD : "dist";
+	console.log("🏗️ Building...");
+	if (await exists(buildDir)) {
+		await rmdir(buildDir, { recursive: true });
+	}
+	await mkdir(buildDir);
+	if (useStaticFiles) {
+		await cp("public", buildDir, { recursive: true });
+	}
+	for await (let [key, route] of pages.entries()) {
+		const file = Bun.file(path.join(buildDir, key.replace(".ts", ".html")));
+		// @ts-ignore
+		const data = route.data ? await route.data(new Request(`http://127.0.0.1/${key}`), {}) : null;
+		const head = route.head ? route.head(data) : "";
+		const body = route.body ? route.body(data) : "";
+		await Bun.write(file, page(head, body instanceof Response ? await body.text() : body, false));
+	}
+	process.exit(0);
 }
 
 if (env == "dev") {
@@ -294,7 +317,7 @@ globalThis.server = Bun.serve<WebSocketContext>({
 	},
 });
 
-if (env == "dev" && (await exists("./public"))) {
+if (env == "dev" && useStaticFiles) {
 	console.log(`🔎 Watching "public" for changes...`);
 	watch(
 		"./public",
