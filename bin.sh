@@ -11,7 +11,7 @@ if [ "$1" = "dev" ]; then
 elif [ "$1" = "gen" ]; then
     GATEWAY_GEN="$2" bun node_modules/gateway/src/index.ts
 elif [ "$1" = "build" ]; then
-    GATEWAY_BUILD="$2" bun node_modules/gateway/src/index.ts
+    GATEWAY_BUILD="${2:-1}" bun node_modules/gateway/src/index.ts
 else
     bun node_modules/gateway/src/index.ts
 fi

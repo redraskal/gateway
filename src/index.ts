@@ -68,7 +68,9 @@ if (process.env.GATEWAY_BUILD) {
 	const buildDir =
 		process.env.GATEWAY_BUILD != "1" && process.env.GATEWAY_BUILD != "" ? process.env.GATEWAY_BUILD : "dist";
 	console.log("🏗️ Building...");
-	await rmdir(buildDir);
+	if (await exists(buildDir)) {
+		await rmdir(buildDir);
+	}
 	await mkdir(buildDir);
 	if (useStaticFiles) {
 		await cp("public", `${buildDir}/public`, { recursive: true });
