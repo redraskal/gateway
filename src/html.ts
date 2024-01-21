@@ -22,11 +22,8 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): strin
 	for (let i = 0; i < strings.length; i++) {
 		if (i > 0) {
 			let value = values[i - 1];
-			let asHTML = value as string;
 
-			if (asHTML) {
-				html += asHTML;
-			} else if (value instanceof Array) {
+			if (value instanceof Array) {
 				html += value.join("");
 			} else {
 				html += value;
