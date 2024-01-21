@@ -73,7 +73,7 @@ if (process.env.GATEWAY_BUILD) {
 	}
 	await mkdir(buildDir);
 	if (useStaticFiles) {
-		await cp("public", `${buildDir}/public`, { recursive: true });
+		await cp("public", buildDir, { recursive: true });
 	}
 	for await (let [key, route] of pages.entries()) {
 		const file = Bun.file(path.join(buildDir, key.replace(".ts", ".html")));
@@ -81,7 +81,6 @@ if (process.env.GATEWAY_BUILD) {
 		const data = route.data ? await route.data(new Request(`http://127.0.0.1/${key}`), {}) : null;
 		const head = route.head ? route.head(data) : "";
 		const body = route.body ? route.body(data) : "";
-		console.log(file);
 		await Bun.write(file, page(head, body instanceof Response ? await body.text() : body, false));
 	}
 	process.exit(0);
