@@ -76,9 +76,9 @@ if (process.env.GATEWAY_BUILD) {
 		await cp("public", `${buildDir}/public`, { recursive: true });
 	}
 	for await (let [key, route] of pages.entries()) {
-		const file = Bun.file(path.join(buildDir, key + ".html"));
+		const file = Bun.file(path.join(buildDir, key.replace(".ts", ".html")));
 		// @ts-ignore
-		const data = route.data ? await route.data(new Request(`/${key}`), {}) : null;
+		const data = route.data ? await route.data(new Request(`http://127.0.0.1/${key}`), {}) : null;
 		const head = route.head ? route.head(data) : "";
 		const body = route.body ? route.body(data) : "";
 		console.log(file);
