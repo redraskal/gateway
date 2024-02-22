@@ -61,7 +61,7 @@ for await (const file of walk("./pages", ["ts"])) {
 	const clazz = await import(absolute);
 	const route = new clazz.default();
 	if (route.ws) route._ws = route.ws();
-	pages.set(file.split("/").slice(1).join("/"), route);
+	pages.set(file.replace("\\", "/").split("/").slice(1).join("/"), route);
 }
 
 if (process.env.GATEWAY_BUILD) {
