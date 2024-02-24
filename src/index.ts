@@ -5,8 +5,8 @@ import { RouteError, ZodErrorWithMessage } from "./error";
 import { page } from "./html";
 import { Route } from "./route";
 import { generateFile, parseBoolean, walk } from "./utils";
-import { MatchedRoute, Server, ServerWebSocket } from "bun";
-import { WebSocketContext } from "./ws";
+import type { MatchedRoute, Server, ServerWebSocket } from "bun";
+import type { WebSocketContext } from "./ws";
 import { exists, mkdir, cp, rmdir } from "fs/promises";
 
 declare global {
@@ -145,6 +145,7 @@ function context(req: Request, server: Server): Ctx {
 		route && (route.ws || env == "dev")
 			? server.upgrade<WebSocketContext>(req, {
 					data: {
+						// @ts-ignore
 						headers: req.headers,
 						route,
 						pathname,
@@ -185,7 +186,7 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 					break;
 				case RouteError:
 					if (err.redirect && !ctx.requestingJsonFile) {
-						return Response.redirect(err.redirect);
+						return Response.redirect(err.redirect, 302);
 					}
 					break;
 			}
@@ -239,7 +240,7 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 			} catch (err: any) {
 				if (err instanceof RouteError && err.redirect) {
 					console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
-					return Response.redirect(err.redirect);
+					return Response.redirect(err.redirect, 302);
 				}
 
 				console.error(err);

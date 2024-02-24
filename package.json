@@ -7,7 +7,7 @@
 	"author": {
 		"name": "redraskal",
 		"url": "https://github.com/redraskal",
-		"email": "ben@ryben.dev"
+		"email": "ben@ctos.sh"
 	},
 	"license": "MIT",
 	"repository": {
@@ -25,7 +25,7 @@
 	],
 	"main": "./src/exports.ts",
 	"devDependencies": {
-		"bun-types": "latest",
+		"@types/bun": "^1.0.7",
 		"mitata": "^0.1.6",
 		"prettier": "^3.0.0"
 	},
