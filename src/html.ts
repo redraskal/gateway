@@ -1,7 +1,7 @@
 export type MetaParams = {
 	title: string;
-	description?: string;
-	imageURL?: string;
+	description?: string | null | undefined;
+	imageURL?: string | null | undefined;
 	omitDefaultTags?: boolean; // omit UTF-8 & viewport tags
 };
 
@@ -45,14 +45,20 @@ export function meta(params: MetaParams) {
 		${!params.omitDefaultTags ? defaultTags : ""}
 		<title>${params.title}</title>
 		<meta name="title" content="${params.title}" />
-		<meta name="description" content="${description}" />
+		${description &&
+		html`
+			<meta name="description" content="${description}" />
+			<meta property="og:description" content="${description}" />
+			<meta property="twitter:description" content="${description}" />
+		`}
 		<meta property="og:type" content="website" />
 		<meta property="og:title" content="${params.title}" />
-		<meta property="og:description" content="${description}" />
-		<meta property="og:image" content="${imageURL}" />
-		<meta property="twitter:card" content="summary_large_image" />
+		<meta property="twitter:card" content="${imageURL ? "summary_large_image" : "summary"}" />
 		<meta property="twitter:title" content="${params.title}" />
-		<meta property="twitter:description" content="${description}" />
-		<meta property="twitter:image" content="${imageURL}" />
+		${imageURL &&
+		html`
+			<meta property="og:image" content="${imageURL}" />
+			<meta property="twitter:image" content="${imageURL}" />
+		`}
 	`;
 }

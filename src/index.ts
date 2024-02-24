@@ -171,6 +171,16 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 		let data: any;
 		let err: any;
 
+		if (req.method == "POST" && req.headers.get("Content-Type") == "application/x-www-form-urlencoded") {
+			const data = await req.clone().formData();
+			const methodOverride = data.get("_method");
+			if (methodOverride && methodOverride instanceof String) {
+				req = new Request(req, {
+					method: methodOverride as string,
+				});
+			}
+		}
+
 		try {
 			data = ctx.route.data ? await ctx.route.data(req, ctx.match!) : null;
 		} catch (e: any) {
