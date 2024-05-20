@@ -17,7 +17,7 @@
 - Route file generator via CLI (bun gen)
 
 ```ts
-import { Data, Route, html, parse } from "gateway";
+import { type Data, Route, html, parse } from "gateway";
 
 export default class implements Route {
 	async data(req: Request) {
