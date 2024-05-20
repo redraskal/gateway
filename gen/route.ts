@@ -1,5 +1,5 @@
-import { MatchedRoute } from "bun";
-import { Data, Route, html } from "gateway";
+import type { MatchedRoute } from "bun";
+import { type Data, Route, html } from "gateway";
 
 export default class implements Route {
 	async data(req: Request, route: MatchedRoute) {

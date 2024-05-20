@@ -53,16 +53,22 @@ if (globalThis.server) globalThis.server.publish("reload", "reload");
 const appIndex = path.join(process.cwd(), "src/index.ts");
 if (await Bun.file(appIndex).exists()) await import(appIndex);
 
+
 const pages = new Map<string, Route>();
 console.log("📁 Loading routes...");
+
 for await (const file of walk("./pages", ["ts"])) {
 	console.log(`	🔗 ${file}`);
+
 	const absolute = path.join(process.cwd(), file);
 	const clazz = await import(absolute);
 	const route = new clazz.default();
+
 	if (route.ws) route._ws = route.ws();
+
 	pages.set(file.replace("\\", "/").split("/").slice(1).join("/"), route);
 }
+
 
 if (process.env.GATEWAY_BUILD) {
 	const buildDir =

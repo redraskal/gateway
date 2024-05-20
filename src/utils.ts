@@ -3,7 +3,6 @@ import { readdir } from "node:fs/promises";
 import { existsSync, mkdirSync } from "fs";
 
 export async function* walk(directory: string, extensions: string[]): AsyncGenerator<string> {
-	// TODO: Use opendir, see https://bun.sh/docs/runtime/nodejs-apis#node_fs
 	for await (const child of await readdir(directory, { withFileTypes: true })) {
 		const joined = path.join(directory, child.name);
 

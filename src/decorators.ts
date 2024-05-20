@@ -1,4 +1,4 @@
-import { Route, RouteResponse } from "./route";
+import { Route, type RouteResponse } from "./route";
 
 export function cache(component?: "head" | "body") {
 	return function cache<T extends { new (...args: any[]): Route }>(constructor: T) {

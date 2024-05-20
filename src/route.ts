@@ -1,6 +1,6 @@
-import { MatchedRoute, ServerWebSocket } from "bun";
+import type { MatchedRoute, ServerWebSocket } from "bun";
 import { z } from "zod";
-import { WebSocketContext } from "./ws";
+import type { WebSocketContext } from "./ws";
 
 export type Resolved<T> = T extends Promise<infer R> ? R : T;
 // @ts-ignore

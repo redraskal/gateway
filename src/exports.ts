@@ -1,4 +1,4 @@
-import { Server } from "bun";
+import type { Server } from "bun";
 export { html, meta } from "./html";
 export * from "./route";
 export * from "./error";
