@@ -22,7 +22,7 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): strin
 	for (let i = 0; i < strings.length; i++) {
 		if (i > 0) {
 			let value = values[i - 1];
-			if (value == null || value == undefined) value = "";
+			if (value == null || value == undefined || !value) value = "";
 
 			if (value instanceof Array) {
 				html += value.join("");
