@@ -57,8 +57,6 @@ const pages = new Map<string, Route>();
 console.log("📁 Loading routes...");
 
 for await (const file of walk("./pages", ["ts"])) {
-	console.log(`	🔗 ${file}`);
-
 	const absolute = path.join(process.cwd(), file);
 	const clazz = await import(absolute);
 	const route = new clazz.default();
@@ -189,20 +187,23 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 			data = ctx.route.data ? await ctx.route.data(req, ctx.match!) : null;
 		} catch (e: any) {
 			err = e;
-			console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
 
 			switch (err.constructor) {
 				case ZodError:
+					console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
 					err = new ZodErrorWithMessage(err.issues);
 					break;
 				case TypeError:
 					console.error(err);
 					break;
 				case RouteError:
+					console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
 					if (err.redirect && !ctx.requestingJsonFile) {
 						return Response.redirect(err.redirect, 302);
 					}
 					break;
+				default:
+					console.error(e);
 			}
 		}
 

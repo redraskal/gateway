@@ -24,12 +24,12 @@
 	],
 	"main": "./src/exports.ts",
 	"devDependencies": {
-		"@types/bun": "^1.0.7",
-		"mitata": "^0.1.6",
-		"prettier": "^3.0.0"
+		"@types/bun": "latest",
+		"mitata": "^0.1.11",
+		"prettier": "^3.3.1"
 	},
 	"peerDependencies": {
-		"typescript": "^5.0.0"
+		"typescript": "^5.2.2"
 	},
 	"scripts": {
 		"prettier": "prettier --write ."
@@ -38,6 +38,6 @@
 		"gateway": "bin.ts"
 	},
 	"dependencies": {
-		"zod": "^3.21.4"
+		"zod": "^3.23.8"
 	}
 }
