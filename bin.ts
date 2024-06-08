@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { $ } from "bun";
 
 const arg = Bun.argv[2];
