@@ -63,7 +63,7 @@ for await (const file of walk("./pages", ["ts"])) {
 
 	if (route.ws) route._ws = route.ws();
 
-	pages.set(file.replace("\\", "/").split("/").slice(1).join("/"), route);
+	pages.set(file.replaceAll("\\", "/").split("/").slice(1).join("/"), route);
 }
 
 if (process.env.GATEWAY_BUILD) {
