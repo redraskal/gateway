@@ -7,7 +7,7 @@ import { Route } from "./route";
 import { generateFile, parseBoolean, walk } from "./utils";
 import type { MatchedRoute, Server, ServerWebSocket } from "bun";
 import type { WebSocketContext } from "./ws";
-import { exists, mkdir, cp, rmdir } from "fs/promises";
+import { cp, exists, mkdir, rmdir } from "fs/promises";
 
 declare global {
 	var reloads: number;
@@ -53,7 +53,7 @@ if (globalThis.server) globalThis.server.publish("reload", "reload");
 const appIndex = path.join(process.cwd(), "src/index.ts");
 if (await Bun.file(appIndex).exists()) await import(appIndex);
 
-const pages = new Map<string, Route>();
+const pages: Record<string, Route> = {};
 console.log("📁 Loading routes...");
 
 for await (const file of walk("./pages", ["ts"])) {
@@ -63,28 +63,35 @@ for await (const file of walk("./pages", ["ts"])) {
 
 	if (route.ws) route._ws = route.ws();
 
-	pages.set(file.replaceAll("\\", "/").split("/").slice(1).join("/"), route);
+	pages[file.replaceAll("\\", "/").split("/").slice(1).join("/")] = route;
 }
 
 if (process.env.GATEWAY_BUILD) {
 	const buildDir =
 		process.env.GATEWAY_BUILD != "1" && process.env.GATEWAY_BUILD != "" ? process.env.GATEWAY_BUILD : "dist";
+
 	console.log("🏗️ Building...");
+
 	if (await exists(buildDir)) {
 		await rmdir(buildDir, { recursive: true });
 	}
+
 	await mkdir(buildDir);
+
 	if (useStaticFiles) {
 		await cp("public", buildDir, { recursive: true });
 	}
-	for await (let [key, route] of pages.entries()) {
+
+	for await (let [key, route] of Object.entries(pages)) {
 		const file = Bun.file(path.join(buildDir, key.replace(".ts", ".html")));
 		// @ts-ignore
 		const data = route.data ? await route.data(new Request(`http://127.0.0.1/${key}`), {}) : null;
 		const head = route.head ? route.head(data) : "";
 		const body = route.body ? route.body(data) : "";
+
 		await Bun.write(file, page(head, body instanceof Response ? await body.text() : body, false));
 	}
+
 	process.exit(0);
 }
 
@@ -96,53 +103,33 @@ if (env == "dev") {
 			recursive: true,
 		},
 		(file: string) => {
-			if (!pages.has(file)) process.exit(8);
+			if (!pages[file]) process.exit(8);
 		}
 	);
 }
 
-const notFound = pages.get("404.ts");
+const notFound = pages["404.ts"];
 
 type Ctx = {
 	match: MatchedRoute | null;
 	route?: Route;
 	pathname: string;
-	requestingJsonFile: boolean;
+	jsonRequest: boolean;
 	upgraded: boolean;
 };
 
 function context(req: Request, server: Server): Ctx {
-	let slashes = 0,
-		sliceStart = -1;
-	let pathname = req.url;
-	let char;
-	const jsonExtensionOffset = req.url.length - 5;
-	let requestingJsonFile = req.headers.get("accept") == "application/json";
-
-	for (let i = 0; i < req.url.length; i++) {
-		char = req.url.charAt(i);
-
-		if (char == "/") {
-			if (slashes == 2) {
-				sliceStart = i;
-			}
-			slashes++;
-		}
-
-		if (char == "." && i <= jsonExtensionOffset && req.url.slice(i + 1, i + 5) == "json") {
-			pathname = pathname.slice(sliceStart, i) + pathname.slice(i + 5);
-			sliceStart = -1;
-			requestingJsonFile = true;
-			break;
-		}
-	}
-
-	if (sliceStart != -1) {
-		pathname = req.url.slice(sliceStart);
-	}
+	const query = req.url.indexOf("?");
+	const jsonFile = req.url.endsWith(".json", query < 0 ? req.url.length : query);
+	const pathname = jsonFile
+		? query < 0
+			? req.url.slice(0, req.url.length - 5)
+			: req.url.slice(0, query - 5) + req.url.slice(query)
+		: req.url;
 
 	const match = router.match(pathname);
-	const route = match ? pages.get(match.src) : undefined;
+	const route = match ? pages[match.src] : undefined;
+
 	const upgraded =
 		route && (route.ws || env == "dev")
 			? server.upgrade<WebSocketContext>(req, {
@@ -159,7 +146,7 @@ function context(req: Request, server: Server): Ctx {
 		match,
 		route,
 		pathname,
-		requestingJsonFile,
+		jsonRequest: jsonFile || req.headers.get("accept") == "application/json",
 		upgraded,
 	};
 }
@@ -173,18 +160,23 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 		let data: any;
 		let err: any;
 
-		if (req.method == "POST" && req.headers.get("Content-Type") == "application/x-www-form-urlencoded") {
-			const data = await req.clone().formData();
-			const methodOverride = data.get("_method");
-			if (methodOverride && methodOverride instanceof String) {
-				req = new Request(req, {
-					method: methodOverride as string,
-				});
-			}
-		}
-
 		try {
 			data = ctx.route.data ? await ctx.route.data(req, ctx.match!) : null;
+
+			if (data && ctx.jsonRequest) {
+				if (data instanceof Array) return Response.json(data);
+
+				// TODO: optimize or remove this feature
+				const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
+					if (key.charAt(0) != "_") {
+						// @ts-ignore
+						obj[key] = value;
+					}
+					return obj;
+				}, {});
+
+				return Response.json(sanitized);
+			}
 		} catch (e: any) {
 			err = e;
 
@@ -198,43 +190,28 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 					break;
 				case RouteError:
 					console.error(`❌ [${err.name}] ${ctx.pathname} ${err.message}`);
-					if (err.redirect && !ctx.requestingJsonFile) {
+					if (err.redirect && !ctx.jsonRequest) {
 						return Response.redirect(err.redirect, 302);
 					}
 					break;
 				default:
 					console.error(e);
 			}
-		}
 
-		if (data && ctx.requestingJsonFile) {
-			if (data instanceof Array) return Response.json(data);
-
-			// TODO: optimize or remove this feature
-			const sanitized = Object.entries(data).reduce((obj, [key, value]) => {
-				if (key.charAt(0) != "_") {
-					// @ts-ignore
-					obj[key] = value;
-				}
-				return obj;
-			}, {});
-
-			return Response.json(sanitized);
-		}
-
-		if (!data && err && ctx.requestingJsonFile && throwJSONErrors) {
-			return Response.json(
-				{
-					error: {
-						type: err.name,
-						issues: err instanceof ZodError ? err.issues : undefined,
-						message: err.message,
+			if (ctx.jsonRequest && throwJSONErrors) {
+				return Response.json(
+					{
+						error: {
+							type: err.name,
+							issues: err instanceof ZodError ? err.issues : undefined,
+							message: err.message,
+						},
 					},
-				},
-				{
-					status: 502,
-				}
-			);
+					{
+						status: 502,
+					}
+				);
+			}
 		}
 
 		if (ctx.route.body) {
@@ -245,9 +222,14 @@ async function request(req: Request, ctx: Ctx): Promise<Response> {
 					return body;
 				}
 
-				let head = ctx.route.head ? ctx.route.head(data, err) : "";
+				const head = ctx.route.head ? ctx.route.head(data, err) : "";
+				// @ts-ignore
+				const html =
+					ctx.route.cached && env != "dev"
+						? ctx.route.cached
+						: page(head, body, ctx.route.ws != undefined || env == "dev");
 
-				return new Response(page(head, body, ctx.route.ws != undefined || env == "dev"), {
+				return new Response(html, {
 					headers: {
 						"Content-Type": "text/html; charset=utf-8",
 					},

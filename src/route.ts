@@ -49,7 +49,7 @@ export async function formData(req: Request) {
  */
 export async function json<T>(req: Request) {
 	if (req.headers.get("accept") == "application/json" && acceptedJSONMethods.includes(req.method)) {
-		return await req.json<T>();
+		return (await req.json()) as T;
 	}
 
 	return null;
@@ -65,6 +65,7 @@ export async function json<T>(req: Request) {
  */
 export async function parse<T>(req: Request) {
 	const data = await formData(req);
+
 	if (data) {
 		return Array.from(data.entries()).reduce(
 			(obj, [key, value]) => ({
@@ -75,6 +76,7 @@ export async function parse<T>(req: Request) {
 			{} as T
 		);
 	}
+
 	return await json<T>(req);
 }
 

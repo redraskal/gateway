@@ -1,3 +1,4 @@
+import { page } from "./html";
 import { Route, type RouteResponse } from "./route";
 
 export function cache(component?: "head" | "body") {
@@ -6,18 +7,36 @@ export function cache(component?: "head" | "body") {
 			constructor(...args: any[]) {
 				super(...args);
 
-				// TODO: this.data() support?
-				let head: string, body: RouteResponse;
+				(async () => {
+					let data;
+					let err: Error | undefined = undefined;
 
-				if (this.head && (!component || component == "head")) {
-					head = this.head({});
-					this.head = () => head;
-				}
+					try {
+						// @ts-ignore
+						data = this.data && !component ? await this.data(null, null) : null;
+					} catch (e) {
+						console.error(e);
+						err = e as Error;
+					}
 
-				if (this.body && (!component || component == "body")) {
-					body = this.body({});
-					this.body = () => body;
-				}
+					// TODO: this.data() support?
+					let head: string, body: RouteResponse;
+
+					if (this.head && (!component || component == "head")) {
+						head = this.head(data, err);
+						this.head = () => head;
+					}
+
+					if (this.body && (!component || component == "body")) {
+						body = this.body(data, err);
+						this.body = () => body;
+					}
+
+					if (!component) {
+						// @ts-ignore
+						this.cached = page(head || "", body, this.ws != undefined);
+					}
+				})();
 			}
 		};
 	};
