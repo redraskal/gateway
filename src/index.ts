@@ -119,13 +119,26 @@ type Ctx = {
 };
 
 function context(req: Request, server: Server): Ctx {
-	const query = req.url.indexOf("?");
-	const jsonFile = req.url.endsWith(".json", query < 0 ? req.url.length : query);
+	let indexOfPath = 0;
+	let slashes = 0;
+
+	for (let i = 0; i < req.url.length; i++) {
+		if (slashes > 2) {
+			indexOfPath = i - 1;
+			break;
+		} else if (req.url.charAt(i) == "/") {
+			slashes++;
+		}
+	}
+
+	const path = req.url.slice(indexOfPath, req.url.length);
+	const query = path.indexOf("?");
+	const jsonFile = path.endsWith(".json", query < 0 ? path.length : query);
 	const pathname = jsonFile
 		? query < 0
-			? req.url.slice(0, req.url.length - 5)
-			: req.url.slice(0, query - 5) + req.url.slice(query)
-		: req.url;
+			? path.slice(0, path.length - 5)
+			: path.slice(0, query - 5) + path.slice(query)
+		: path;
 
 	const match = router.match(pathname);
 	const route = match ? pages[match.src] : undefined;
