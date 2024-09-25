@@ -17,5 +17,5 @@ if (arg == "dev") {
 	}
 
 	// @ts-ignore
-	await import("node_modules/gateway/src/index.ts");
+	await import("index.ts");
 }
